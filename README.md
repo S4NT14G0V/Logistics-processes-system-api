@@ -2,16 +2,37 @@
 
 **Sistema Web para Optimización de Procesos Logísticos**
 
-  Sistema web que optimice los procesos de transporte y distribución de la empresa, incrementando la eficiencia operativa, reduciendo tiempos de gestión y mejorando la experiencia del cliente mediante la automatización, trazabilidad y     análisis de datos en tiempo real. 
-
----
+ A web-based system that optimizes a company's transportation and distribution processes, increasing operational efficiency, reducing management time, and improving the customer experience through automation, traceability, and real-time data analysis.
 
 **Feature 4.**
 
-  Control de Inventario en Tránsito Monitorea los paquetes en todas las etapas del transporte, minimizando pérdidas y errores. 
+  In-Transit Inventory Control Monitor packages at all stages of transportation, minimizing losses and errors.
 
 **Constraints**
 * Java 17
+* Docker
+* Docker [Compose]
+
+---
+
+## Configuración del archivo `.env`
+Before running the project, create a `.env` file in the root with the following environment variables. Here's an example:
+
+```env
+SERVER_PORT=8080
+FRONTEND_BASE_URL=http://localhost:3000
+BACKEND_BASE_URL=http://localhost:8080
+DB_NAME=mydatabase
+DB_HOST=localhost
+DB_USER=myuser
+DB_PASSWORD=mypassword
+DB_PORT=5432
+JWT_SECRET=mysupersecretkey
+JWT_EXPIRATION=3600000
+OAUTH2_IDCLIENT=your-google-client-id.apps.googleusercontent.com
+OAUTH2_SECRETCLIENT=your-google-client-secret
+ADMIN_EMAIL=test@gmail.com
+```
 
 ## Data Base
 ### Set up the database in Supabase
@@ -24,96 +45,50 @@ __Preview__:
 
 ### Replace the values of the Data Base
 
-Go to the `application.properties` and replace the  values of
-`${DB_URL}`, `${DB_PORT}`, `${DB}`, `${DB_USER}` and `${DB_PASSWORD}`
+Go to the `.env` and replace the  values of
+`DB_URL`, `DB_PORT`, `DB`, `DB_USER` and `DB_PASSWORD`
 with your postgresql database values corresponding.
 
-```
-spring.datasource.url=jdbc:postgresql://${DB_URL}:${DB_PORT}/${DB}
-spring.datasource.username=${DB_USER}
-spring.datasource.password=${DB_PASSWORD}
-```
-
 ## Google Cloud API / Oauth2
-Create an account in Google Cloud and in the search bar put auth, after that click on the first option called similar to `Oauth Consent Screen` fill all necessary information.
+Create an account in Google Cloud and in the search bar put auth, after that click on the first option called similar to `Oauth Consent Screen` fill all necessary information. Click in the `Clients` button and after that click on the `Add client` button to create a new client for the project, add the corresponding `Urls` for prepare the integration service correctly. For the last, save the `Client ID` and `Client Secret` values and replace all in `.env`.
 
 __Preview__:
 
 ![image](https://github.com/user-attachments/assets/abdce81c-aa3b-4f0b-9f17-f7567c88937b)
 
-After that click in the `Clients` button of the sidebar
-
-![image](https://github.com/user-attachments/assets/86f22cd4-a0ac-4128-90fd-c18882038921)
-
-In this site click on the `Add client` button to create a new client for the project
-
 ![image](https://github.com/user-attachments/assets/c79fe0fa-18c2-4f82-b34a-8fcdc83e2368)
-
-Add the corresponding `Urls` for prepare the service correctly
 
 ![image](https://github.com/user-attachments/assets/1f9713ed-189f-4811-8b98-214f99e7f81a)
 
-Save the `Client ID` and `Client Secret` values
-
-![image](https://github.com/user-attachments/assets/5bcb1124-5ac4-49bd-ae4d-fd0ecec0980e)
-
-![image](https://github.com/user-attachments/assets/8e1b1dd8-59f7-4778-a69e-5e58f4019f7e)
-
-Also establish the Base of the Url of the project
-
-And replace all in `application.properties` in this section
-```
-spring.security.oauth2.client.registration.google.client-id=${OAUTH2_IDCLIENT}
-spring.security.oauth2.client.registration.google.client-secret=${OAUTH2_SECRETCLIENT}
-spring.security.oauth2.client.registration.google.redirect-uri=${BASE_URL}/login/oauth2/code/google
-spring.security.oauth2.client.registration.google.scope=email,profile
-spring.security.oauth2.client.provider.google.authorization-uri=https://accounts.google.com/o/oauth2/v2/auth
-spring.security.oauth2.client.provider.google.token-uri=https://oauth2.googleapis.com/token
-spring.security.oauth2.client.provider.google.user-info-uri=https://www.googleapis.com/oauth2/v3/userinfo
-spring.security.oauth2.client.provider.google.user-name-attribute=sub
-```
-
 ## JWT
-Establish the parameters of the jwt, that includes `Secret` and `Expiration`, the secret necessary need be `Base64` to function correctly and the expiration it is in milliseconds.
-
-Replace this values in `application.properties`
-```
-app.jwt.secret=${JWT_SECRET}
-app.jwt.expiration=${JWT_EXPIRATION}
-```
+Establish the parameters of the jwt, that includes `Secret` and `Expiration`, the secret necessary need be `Base64` to function correctly and the expiration it is in milliseconds. Also replace this values in `.env`.
 
 ## Admin Setup
 Also, for this sprint to validate everything, you need some special role; our feature includes authentication, but it is not based exclusively on that, then
-you need to replace this value in `application.properties` (Note: This is provisional for this sprint)
-```
-app.admin.email=${ADMIN_EMAIL}
-```
+you need to replace this value in `.env` (Note: This is provisional to show the results of the sprints).
+
+---
 
 ## How to install it
 
-Execute:
+### 1. Clone the repository:
 
 ```shell
-$ mvnw spring-boot:run
+git clone https://github.com/TeoGR25/Feature4_Backend.git
 ```
-to download the node dependencies
 
+### 2. Put the `.env` file with all the values
+Make sure you have the `.env` file configured as explained above.
 
-
+### 3. Execute the project with Docker Compose
+```docker-compose
+docker-compose build
+```
+```docker-compose
+docker-compose up
+```
 ## How to test it
 
-Execute:
+Enter to the url of backend that you put in the `.env` with the extension `/oauth2/authorization/google`, example: `localhost:8080/oauth2/authorization/google`, and in that site you log in with the google account, after you are going to be redirected to the frontend url of you `.env` wit the extension `/auth/callback?token=`, example: `http://localhost:3001/auth/callback?token=eyJhbGci8...`, then with the token of that url you can execute calls to the `/graphql` endpoint correctly.
 
-```shell
-$ mvnw clean install
-```
-
-## GraphQL Endpoints
-To see what are the endpoints created/allowed for this project go to the url
-`http://localhost:8080/oauth2/authorization/google` and sign in with the same email that you putted in the admin setup
-copy the header with the button `Copiar header` and after that press the button `Ir a Graphql`, there in the bottom replace all
-with the header copied, and in the top you can put different querys that represent the endpoints to access to the information, in the folder
-`resources` you can see examples of the querys that you can use, in the file called `graphql-instructions.txt`,
-or press the button in the sidebar called `Documentation`
-
-(Note: the header allows to execute the querys, you can test it deleting the JWT putting this `"Authorization":"Bearer "` or changing some character of the JWT)
+Test the endpoint in the extension `/graphiql` of your backend url, at this point for testing you need to put `{"Authorization":"Bearer token"}` after replaced the token value. To see more about the data point access press the button in the sidebar called `Documentation`
