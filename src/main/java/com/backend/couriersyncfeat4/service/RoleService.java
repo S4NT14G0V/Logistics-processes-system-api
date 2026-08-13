@@ -24,4 +24,8 @@ public class RoleService {
     public RoleEntity findById(int id){
         return roleRepository.findById(id).orElseThrow(()->new RuntimeException("Role not found"));
     }
+
+    public RoleEntity findByName(String name){
+        return roleRepository.findByName(name).orElseThrow(()->new RuntimeException("Role not found: " + name));
+    }
 }

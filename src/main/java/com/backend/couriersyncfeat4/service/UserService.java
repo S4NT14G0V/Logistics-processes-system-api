@@ -3,8 +3,12 @@ package com.backend.couriersyncfeat4.service;
 import com.backend.couriersyncfeat4.entity.CustomResponseEntity;
 import com.backend.couriersyncfeat4.entity.RoleEntity;
 import com.backend.couriersyncfeat4.entity.UserEntity;
+import com.backend.couriersyncfeat4.exceptions.ApplicationException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import com.backend.couriersyncfeat4.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -20,6 +24,17 @@ public class UserService {
     public UserService(UserRepository userRepository,  RoleService roleService) {
         this.userRepository = userRepository;
         this.roleService = roleService;
+    }
+
+    public UserEntity getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ApplicationException("user-not-authenticated", "User not authenticated", HttpStatus.UNAUTHORIZED);
+        }
+
+        String email = authentication.getName();
+        return userRepository.findByEmail(email);
     }
 
     // TODO: make validations in each function
@@ -56,5 +71,20 @@ public class UserService {
 
     public UserEntity findUserByEmail(String email){
         return userRepository.findByEmail(email);
+    }
+
+    public boolean existsByEmail(String email){
+        return userRepository.existsByEmail(email);
+    }
+
+    public UserEntity register(String name, String email, String encodedPassword, RoleEntity role) {
+        UserEntity userEntity = new UserEntity();
+        userEntity.setName(name);
+        userEntity.setEmail(email);
+        userEntity.setPassword(encodedPassword);
+        userEntity.setRoleEntity(role);
+        userEntity.setEnabled(true);
+        userEntity.setCreatedAt(LocalDateTime.now());
+        return userRepository.save(userEntity);
     }
 }

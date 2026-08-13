@@ -8,7 +8,8 @@ public enum ErrorCodes {
     INVALID_INPUT("INVALID_INPUT", 400),
     RESOURCE_NOT_FOUND("RESOURCE_NOT_FOUND", 404),
     UNAUTHORIZED("UNAUTHORIZED", 401),
-    FORBIDDEN("FORBIDDEN", 403);
+    FORBIDDEN("FORBIDDEN", 403),
+    CONFLICT("CONFLICT", 409);
 
     private final String code;
     private final int statusCode;

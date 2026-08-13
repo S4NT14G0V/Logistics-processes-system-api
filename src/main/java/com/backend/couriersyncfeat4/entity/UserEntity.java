@@ -23,8 +23,13 @@ public class UserEntity {
     @Column(nullable = false)
     private String email;
 
+    private String password;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(nullable = false)
+    private boolean enabled = true;
 
     @ManyToOne
     @JoinColumn(name = "role_id", nullable = false)
