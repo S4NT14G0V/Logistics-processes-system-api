@@ -1,7 +1,6 @@
 package com.backend.couriersyncfeat4.controller;
 
 import com.backend.couriersyncfeat4.entity.AlertEntity;
-import com.backend.couriersyncfeat4.interfaces.IAlertService;
 import com.backend.couriersyncfeat4.service.AlertService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.graphql.data.method.annotation.Argument;
@@ -18,7 +17,7 @@ public class WebSocketGraphQLController {
 
     private final Map<String, Sinks.Many<String>> userChannels = new ConcurrentHashMap<>();
     private final Map<String, Sinks.Many<AlertEntity>> userAlertChannels = new ConcurrentHashMap<>();
-    private final IAlertService alertService;
+    private final AlertService alertService;
 
     @Autowired
     public WebSocketGraphQLController(AlertService alertService) {

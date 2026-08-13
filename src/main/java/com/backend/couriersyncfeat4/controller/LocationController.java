@@ -2,7 +2,7 @@ package com.backend.couriersyncfeat4.controller;
 
 import com.backend.couriersyncfeat4.entity.CustomResponseEntity;
 import com.backend.couriersyncfeat4.entity.LocationEntity;
-import com.backend.couriersyncfeat4.interfaces.ILocationService;
+import com.backend.couriersyncfeat4.service.LocationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -15,10 +15,10 @@ import java.util.List;
 @Controller
 public class LocationController {
 
-    private final ILocationService locationService;
+    private final LocationService locationService;
 
     @Autowired
-    public LocationController(ILocationService locationService) {
+    public LocationController(LocationService locationService) {
         this.locationService = locationService;
     }
 

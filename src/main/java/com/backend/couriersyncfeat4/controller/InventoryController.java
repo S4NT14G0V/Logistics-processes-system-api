@@ -1,6 +1,6 @@
 package com.backend.couriersyncfeat4.controller;
 
-import com.backend.couriersyncfeat4.interfaces.IInventoryService;
+import com.backend.couriersyncfeat4.service.InventoryService;
 import com.backend.couriersyncfeat4.entity.InventorySummary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.graphql.data.method.annotation.Argument;
@@ -17,10 +17,10 @@ public class InventoryController {
 
     private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
-    private final IInventoryService inventoryService;
+    private final InventoryService inventoryService;
 
     @Autowired
-    public InventoryController(IInventoryService inventoryService) {
+    public InventoryController(InventoryService inventoryService) {
         this.inventoryService = inventoryService;
     }
 

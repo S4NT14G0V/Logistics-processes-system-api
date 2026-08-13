@@ -4,7 +4,6 @@ import com.backend.couriersyncfeat4.entity.AlertEntity;
 import com.backend.couriersyncfeat4.entity.AlertTypeEntity;
 import com.backend.couriersyncfeat4.entity.PackageEntity;
 import com.backend.couriersyncfeat4.entity.UserEntity;
-import com.backend.couriersyncfeat4.interfaces.IAlertService;
 import com.backend.couriersyncfeat4.repository.AlertRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,7 +12,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-public class AlertService implements IAlertService {
+public class AlertService {
 
     private final AlertRepository alertRepository;
     private final AlertTypeService alertTypeService;

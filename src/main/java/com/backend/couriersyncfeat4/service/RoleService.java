@@ -1,7 +1,6 @@
 package com.backend.couriersyncfeat4.service;
 
 import com.backend.couriersyncfeat4.entity.RoleEntity;
-import com.backend.couriersyncfeat4.interfaces.IRoleService;
 import com.backend.couriersyncfeat4.repository.RoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -9,7 +8,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class RoleService implements IRoleService {
+public class RoleService {
 
     private final RoleRepository roleRepository;
 

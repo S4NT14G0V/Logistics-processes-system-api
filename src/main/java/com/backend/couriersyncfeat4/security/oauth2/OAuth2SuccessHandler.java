@@ -2,8 +2,8 @@ package com.backend.couriersyncfeat4.security.oauth2;
 
 import com.backend.couriersyncfeat4.entity.RoleEntity;
 import com.backend.couriersyncfeat4.entity.UserEntity;
-import com.backend.couriersyncfeat4.interfaces.IRoleService;
-import com.backend.couriersyncfeat4.interfaces.IUserService;
+import com.backend.couriersyncfeat4.service.RoleService;
+import com.backend.couriersyncfeat4.service.UserService;
 import com.backend.couriersyncfeat4.security.jwt.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -22,8 +22,8 @@ import java.io.IOException;
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final IUserService userService;
-    private final IRoleService roleService;
+    private final UserService userService;
+    private final RoleService roleService;
 
     @Value("${app.frontend.redirect-uri}")
     private String redirectUri;

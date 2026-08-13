@@ -3,7 +3,6 @@ package com.backend.couriersyncfeat4.service;
 import com.backend.couriersyncfeat4.entity.CustomResponseEntity;
 import com.backend.couriersyncfeat4.entity.RoleEntity;
 import com.backend.couriersyncfeat4.entity.UserEntity;
-import com.backend.couriersyncfeat4.interfaces.IUserService;
 import com.backend.couriersyncfeat4.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,7 +11,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-public class UserService implements IUserService {
+public class UserService {
 
     private final UserRepository userRepository;
     private final RoleService roleService;

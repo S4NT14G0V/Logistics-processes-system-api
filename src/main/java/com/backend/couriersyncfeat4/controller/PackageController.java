@@ -3,7 +3,7 @@ package com.backend.couriersyncfeat4.controller;
 import com.backend.couriersyncfeat4.dto.PackageCountByUserDTO;
 import com.backend.couriersyncfeat4.entity.CustomResponseEntity;
 import com.backend.couriersyncfeat4.entity.PackageEntity;
-import com.backend.couriersyncfeat4.interfaces.IPackageService;
+import com.backend.couriersyncfeat4.service.PackageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -17,10 +17,10 @@ import java.util.List;
 @Controller
 public class PackageController {
 
-    private final IPackageService packageService;
+    private final PackageService packageService;
 
     @Autowired
-    public PackageController(IPackageService packageService) {
+    public PackageController(PackageService packageService) {
         this.packageService = packageService;
     }
 

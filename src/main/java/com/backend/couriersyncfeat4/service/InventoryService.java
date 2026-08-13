@@ -1,6 +1,5 @@
 package com.backend.couriersyncfeat4.service;
 
-import com.backend.couriersyncfeat4.interfaces.IInventoryService;
 import com.backend.couriersyncfeat4.entity.InventorySummary;
 import com.backend.couriersyncfeat4.repository.InventoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-public class InventoryService implements IInventoryService {
+public class InventoryService {
 
     private final InventoryRepository inventoryRepo;
 
@@ -19,11 +18,7 @@ public class InventoryService implements IInventoryService {
         this.inventoryRepo = inventoryRepo;
     }
 
-    @Override
-    public List<InventorySummary> findSummary(LocalDateTime start,
-                                                        LocalDateTime end,
-                                                        String region) {
+    public List<InventorySummary> findSummary(LocalDateTime start, LocalDateTime end, String region) {
         return inventoryRepo.summaryByPeriodAndRegion(start, end, region);
     }
 }
-

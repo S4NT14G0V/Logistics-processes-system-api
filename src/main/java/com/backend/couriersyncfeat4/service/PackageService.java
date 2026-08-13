@@ -2,7 +2,6 @@ package com.backend.couriersyncfeat4.service;
 
 import com.backend.couriersyncfeat4.dto.PackageCountByUserDTO;
 import com.backend.couriersyncfeat4.entity.*;
-import com.backend.couriersyncfeat4.interfaces.IPackageService;
 import com.backend.couriersyncfeat4.repository.PackageRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,7 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-public class PackageService implements IPackageService {
+public class PackageService {
 
     private final PackageRepository packageRepository;
     private final UserService userService;

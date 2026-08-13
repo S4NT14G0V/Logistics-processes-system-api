@@ -3,26 +3,25 @@ package com.backend.couriersyncfeat4.controller;
 import com.backend.couriersyncfeat4.entity.AlertTypeEntity;
 import com.backend.couriersyncfeat4.entity.PackageStatusEntity;
 import com.backend.couriersyncfeat4.entity.RoleEntity;
-import com.backend.couriersyncfeat4.interfaces.IAlertTypeService;
-import com.backend.couriersyncfeat4.interfaces.IPackageStatusService;
-import com.backend.couriersyncfeat4.interfaces.IRoleService;
+import com.backend.couriersyncfeat4.service.AlertTypeService;
+import com.backend.couriersyncfeat4.service.PackageStatusService;
+import com.backend.couriersyncfeat4.service.RoleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
-
 import java.util.List;
 
 @Controller
 public class TypesController {
 
-    private final IRoleService roleService;
-    private final IPackageStatusService  packageStatusService;
-    private final IAlertTypeService alertTypeService;
+    private final RoleService roleService;
+    private final PackageStatusService  packageStatusService;
+    private final AlertTypeService alertTypeService;
 
     @Autowired
-    public TypesController(IRoleService roleService, IPackageStatusService  packageStatusService, IAlertTypeService alertTypeService){
+    public TypesController(RoleService roleService, PackageStatusService  packageStatusService, AlertTypeService alertTypeService){
         this.roleService = roleService;
         this.packageStatusService = packageStatusService;
         this.alertTypeService = alertTypeService;

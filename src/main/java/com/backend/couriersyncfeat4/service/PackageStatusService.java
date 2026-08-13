@@ -1,7 +1,6 @@
 package com.backend.couriersyncfeat4.service;
 
 import com.backend.couriersyncfeat4.entity.PackageStatusEntity;
-import com.backend.couriersyncfeat4.interfaces.IPackageStatusService;
 import com.backend.couriersyncfeat4.repository.PackageStatusRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -9,7 +8,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class PackageStatusService implements IPackageStatusService {
+public class PackageStatusService {
 
     private final PackageStatusRepository packageStatusRepository;
 

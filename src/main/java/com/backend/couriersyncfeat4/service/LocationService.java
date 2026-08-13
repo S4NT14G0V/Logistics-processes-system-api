@@ -4,7 +4,6 @@ import com.backend.couriersyncfeat4.entity.CustomResponseEntity;
 import com.backend.couriersyncfeat4.entity.LocationEntity;
 import com.backend.couriersyncfeat4.entity.PackageEntity;
 import com.backend.couriersyncfeat4.entity.UserEntity;
-import com.backend.couriersyncfeat4.interfaces.ILocationService;
 import com.backend.couriersyncfeat4.repository.LocationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,7 +12,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-public class LocationService implements ILocationService {
+public class LocationService {
 
     private final LocationRepository locationRepository;
     private final UserService userService;
