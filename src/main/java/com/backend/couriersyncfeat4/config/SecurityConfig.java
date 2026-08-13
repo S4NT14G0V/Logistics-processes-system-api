@@ -45,10 +45,10 @@ public class SecurityConfig {
                                 "/oauth2/**",
                                 "/login/**",
                                 "/graphiql/**",
-                                "/graphql",
+                                "/graphql/**",
                                 "/actuator/**"
                         ).permitAll()
-                        .anyRequest().authenticated()
+                        //.anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .successHandler(oAuth2SuccessHandler)
