@@ -6,8 +6,8 @@ networks:
 
 services:
   backend-app:
-    container_name: backend_couriersync_app
-    image: bck-couriersync-app:1.0.0
+    container_name: logistics-processes-system-api
+    image: logistics-processes-system-api:1.0.0
     build: .
     ports:
       - "${SERVER_PORT}:${SERVER_PORT}"
@@ -45,3 +45,20 @@ services:
       - prometheus
     networks:
       - monitoring-net
+
+  database:
+    image: postgres:18
+    container_name: postgres-dev
+    environment:
+      POSTGRES_DB: "${DB_NAME}"
+      POSTGRES_USER: "${DB_USER}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - monitoring-net
+
+volumes:
+  postgres_data:
