@@ -6,6 +6,7 @@ target/
 
 # Ignorar archivo de variables de entorno locales
 .env
+.env.*
 
 ### STS ###
 .apt_generated
