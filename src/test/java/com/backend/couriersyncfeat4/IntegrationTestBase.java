@@ -55,7 +55,7 @@ public abstract class IntegrationTestBase {
     protected static final String PASSWORD = "Passw0rd!123";
 
     protected static final String PACKAGE_FIELDS =
-            "{ uuid trackingCode description status{ code name } origin{ uuid name } destination{ uuid name } history{ changedAt fromStatus{ code } toStatus{ code } } price weightKg }";
+            "{ uuid trackingCode description registeredAt status{ code name } origin{ uuid name } destination{ uuid name } history{ changedAt fromStatus{ code } toStatus{ code } } price weightKg }";
     protected static final String TRACKING_FIELDS =
             "{ trackingCode description status{ code name } history{ changedAt toStatus{ code } } }";
     protected static final String PLACE_FIELDS =
@@ -196,11 +196,17 @@ public abstract class IntegrationTestBase {
     }
 
     protected void expectForbidden(GraphQlTester.Errors errors) {
-        errors.expect(err -> "Forbidden".equals(err.getMessage()));
+        errors.satisfy(list -> {
+            assertThat(list).isNotEmpty();
+            assertThat(list.get(0).getMessage()).isEqualTo("Forbidden");
+        });
     }
 
     protected void expectErrorCode(GraphQlTester.Errors errors, String code) {
-        errors.expect(err -> code.equals(err.getExtensions().get("code")));
+        errors.satisfy(list -> {
+            assertThat(list).isNotEmpty();
+            assertThat(list.get(0).getExtensions()).containsEntry("code", code);
+        });
     }
 
     // ---------- datos de prueba ----------
