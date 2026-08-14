@@ -17,6 +17,9 @@ public class PackageStatusEntity {
     private int id;
 
     @Column(nullable = false, unique = true)
+    private String code;
+
+    @Column(nullable = false, unique = true)
     private String name;
 
     private String description;

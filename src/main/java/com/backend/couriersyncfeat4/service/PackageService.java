@@ -1,13 +1,29 @@
 package com.backend.couriersyncfeat4.service;
 
-import com.backend.couriersyncfeat4.dto.PackageCountByUserDTO;
-import com.backend.couriersyncfeat4.entity.*;
+import com.backend.couriersyncfeat4.config.Permission;
+import com.backend.couriersyncfeat4.dto.input.PackageInput;
+import com.backend.couriersyncfeat4.dto.output.PackageCountProjection;
+import com.backend.couriersyncfeat4.dto.output.PackageCountResponse;
+import com.backend.couriersyncfeat4.dto.output.PackageResponse;
+import com.backend.couriersyncfeat4.entity.PackageEntity;
+import com.backend.couriersyncfeat4.entity.PackageStatusEntity;
+import com.backend.couriersyncfeat4.entity.PackageStatusHistoryEntity;
+import com.backend.couriersyncfeat4.entity.PlaceEntity;
+import com.backend.couriersyncfeat4.entity.UserEntity;
+import com.backend.couriersyncfeat4.enums.PackageStatusEnum;
+import com.backend.couriersyncfeat4.exceptions.ApplicationException;
+import com.backend.couriersyncfeat4.exceptions.ErrorCodes;
+import com.backend.couriersyncfeat4.mapper.PackageMapper;
+import com.backend.couriersyncfeat4.mapper.PlaceMapper;
 import com.backend.couriersyncfeat4.repository.PackageRepository;
+import com.backend.couriersyncfeat4.repository.PackageStatusHistoryRepository;
+import com.backend.couriersyncfeat4.security.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -15,145 +31,251 @@ import java.util.UUID;
 @Service
 public class PackageService {
 
+    private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final PackageRepository packageRepository;
     private final UserService userService;
     private final PackageStatusService packageStatusService;
+    private final PackageStatusHistoryRepository statusHistoryRepository;
+    private final PlaceService placeService;
+    private final PackageMapper packageMapper;
+    private final PlaceMapper placeMapper;
 
     @Autowired
-    public PackageService(PackageRepository packageRepository, UserService userService, PackageStatusService packageStatusService) {
+    public PackageService(PackageRepository packageRepository, UserService userService,
+            PackageStatusService packageStatusService, PackageStatusHistoryRepository statusHistoryRepository,
+            PlaceService placeService, PackageMapper packageMapper, PlaceMapper placeMapper) {
         this.packageRepository = packageRepository;
         this.userService = userService;
         this.packageStatusService = packageStatusService;
+        this.statusHistoryRepository = statusHistoryRepository;
+        this.placeService = placeService;
+        this.packageMapper = packageMapper;
+        this.placeMapper = placeMapper;
     }
 
-    // TODO: make validations in each function
-    public PackageEntity addPackage(PackageEntity packageEntity) {
-
-        if (packageEntity == null || packageEntity.getOrigin() == null || packageEntity.getDestination() == null
-        || packageEntity.getOwnerUser() == null || packageEntity.getStatus() == null) {
-            throw new RuntimeException("Some value is null");
+    public PackageResponse createPackage(PackageInput input) {
+        if (input == null || input.origin() == null || input.destination() == null) {
+            throw new ApplicationException(ErrorCodes.INVALID_INPUT, "Origin and destination are required");
         }
 
-        UserEntity userEntity = userService.findUserById(packageEntity.getOwnerUser().getId());
-        PackageStatusEntity packageStatusEntity = packageStatusService.findById(packageEntity.getStatus().getId());
+        PlaceEntity origin = placeService.getByUuid(input.origin());
+        PlaceEntity destination = placeService.getByUuid(input.destination());
+        
+        if (origin.getUuid().equals(destination.getUuid())) {
+            throw new ApplicationException(ErrorCodes.INVALID_INPUT, "Origin and destination must be different");
+        }
 
-        PackageEntity packageEntityAux = new PackageEntity();
-        packageEntityAux.setOwnerUser(userEntity);
-        packageEntityAux.setStatus(packageStatusEntity);
-        packageEntityAux.setDescription(packageEntity.getDescription());
-        packageEntityAux.setOrigin(packageEntity.getOrigin());
-        packageEntityAux.setDestination(packageEntity.getDestination());
-        packageEntityAux.setRegisteredAt(LocalDateTime.now());
+        UserEntity currentUser = userService.getCurrentUser();
+        PackageStatusEntity createdStatus = packageStatusService.findByCode(PackageStatusEnum.CREATED.getCode());
 
-        packageRepository.save(packageEntityAux);
-        return packageEntityAux;
+        PackageEntity packageEntity = packageMapper.toEntity(input, origin, destination);
+        packageEntity.setOwnerUser(currentUser);
+        packageEntity.setStatus(createdStatus);
+
+        packageRepository.save(packageEntity);
+        recordStatusChange(packageEntity, null, createdStatus, currentUser);
+        return packageMapper.toResponse(packageEntity);
     }
 
-    public List<PackageEntity> findAllPackages() {
-        return packageRepository.findAll();
+    public List<PackageResponse> findAllPackages(Integer page, Integer size) {
+        Pageable pageable = toPageable(page, size);
+        if (SecurityUtils.hasPermission(Permission.PACKAGE_READ_ALL)) {
+            return packageRepository.findAll(pageable).stream().map(packageMapper::toResponse).toList();
+        }
+        return packageRepository.findAllByOwnerUser_Email(SecurityUtils.currentUserEmail(), pageable)
+                .stream().map(packageMapper::toResponse).toList();
     }
 
-    public PackageEntity findPackageById(Long id) {
-        return packageRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Package not found"));
+    public PackageResponse findPackageById(UUID id) {
+        PackageEntity packageEntity = packageRepository.findById(id)
+                .orElseThrow(() -> new ApplicationException(ErrorCodes.PACKAGE_NOT_FOUND, "Package not found"));
+        assertOwnerOrPermission(packageEntity, Permission.PACKAGE_READ_ALL);
+        return packageMapper.toResponse(packageEntity);
     }
 
-    public PackageEntity findPackageByTrackingCode(String trackingCode) {
+    public PackageResponse findPackageByTrackingCode(String trackingCode) {
         if (trackingCode == null || trackingCode.trim().isEmpty()) {
-            throw new RuntimeException("Tracking code is null or empty");
+            throw new ApplicationException(ErrorCodes.INVALID_INPUT, "Tracking code is null or empty");
         }
-        UUID trackingCodeUUID = UUID.fromString(trackingCode);
-        return packageRepository.findByTrackingCode(trackingCodeUUID)
-                .orElseThrow(() -> new RuntimeException("Package not found"));
+
+        PackageEntity packageEntity = packageRepository.findByTrackingCode(trackingCode.trim())
+                .orElseThrow(() -> new ApplicationException(ErrorCodes.PACKAGE_NOT_FOUND, "Package not found"));
+
+        assertOwnerOrPermission(packageEntity, Permission.PACKAGE_READ_ALL);
+        return packageMapper.toResponse(packageEntity);
     }
 
-    public CustomResponseEntity updatePackage(PackageEntity packageEntity) {
-        if (!packageRepository.existsById(packageEntity.getId())) {
-            return new CustomResponseEntity(false, "Package not found for update");
+    public PackageResponse updatePackage(UUID id, PackageInput input) {
+        if (input == null) {
+            throw new ApplicationException(ErrorCodes.INVALID_INPUT, "Update data is required");
         }
-        PackageEntity oldPackageEntity = findPackageById(packageEntity.getId());
 
-        UserEntity userEntity = packageEntity.getOwnerUser() != null ? packageEntity.getOwnerUser() : oldPackageEntity.getOwnerUser();
+        PackageEntity packageEntity = packageRepository.findById(id)
+                .orElseThrow(() -> new ApplicationException(ErrorCodes.PACKAGE_NOT_FOUND, "Package not found"));
+        
+        assertCanUpdate(packageEntity);
 
-        PackageStatusEntity packageStatusEntity = packageEntity.getStatus() != null ? packageEntity.getStatus() : oldPackageEntity.getStatus();
+        PlaceEntity origin = null;
+        PlaceEntity destination = null;
 
-        String description = packageEntity.getDescription() != null ? packageEntity.getDescription() : oldPackageEntity.getDescription();
+        if (input.origin() != null) {
+            origin = placeService.getByUuid(input.origin());
+        }
+        if (input.destination() != null) {
+            destination = placeService.getByUuid(input.destination());
+        }
+        if (origin != null && destination != null && origin.getUuid().equals(destination.getUuid())) {
+            throw new ApplicationException(ErrorCodes.INVALID_INPUT, "Origin and destination must be different");
+        }
 
-        String origin = packageEntity.getDestination() != null ? packageEntity.getOrigin() : oldPackageEntity.getOrigin();
-
-        String destination = packageEntity.getDestination() != null ? packageEntity.getDestination() : oldPackageEntity.getDestination();
-
-        oldPackageEntity.setOwnerUser(userEntity);
-        oldPackageEntity.setStatus(packageStatusEntity);
-        oldPackageEntity.setDescription(description);
-        oldPackageEntity.setOrigin(origin);
-        oldPackageEntity.setDestination(destination);
-
-        packageRepository.save(oldPackageEntity);
-        return new CustomResponseEntity(true, "Package successfully updated");
+        packageEntity.updateFrom(input.description(), origin, destination);
+        packageRepository.save(packageEntity);
+        return packageMapper.toResponse(packageEntity);
     }
 
-    public CustomResponseEntity deletePackageById(Long id) {
-        if (!packageRepository.existsById(id)) {
-            return new CustomResponseEntity(false, "Package with id " + id + " does not exist");
-        }
-        packageRepository.deleteById(id);
-        return new CustomResponseEntity(true, "Package with id " + id + " successfully deleted");
+    public PackageResponse deletePackageById(UUID id, String reason) {
+        PackageEntity packageEntity = packageRepository.findById(id)
+                .orElseThrow(() -> new ApplicationException(ErrorCodes.PACKAGE_NOT_FOUND, "Package not found"));
+        
+        assertCanCancel(packageEntity);
+
+        PackageStatusEntity cancelledStatus = packageStatusService.findByCode(PackageStatusEnum.CANCELLED.getCode());
+        PackageStatusEntity fromStatus = packageEntity.getStatus();
+
+        packageEntity.setStatus(cancelledStatus);
+        packageEntity.setCancelledAt(LocalDateTime.now());
+        packageEntity.setCancellationReason(reason);
+
+        packageRepository.save(packageEntity);
+        recordStatusChange(packageEntity, fromStatus, cancelledStatus, userService.getCurrentUser());
+        return packageMapper.toResponse(packageEntity);
     }
 
-    public List<PackageEntity> findPackagesByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
+    public PackageResponse changePackageStatus(UUID id, String statusCode) {
+        PackageEntity packageEntity = packageRepository.findById(id)
+                .orElseThrow(() -> new ApplicationException(ErrorCodes.PACKAGE_NOT_FOUND, "Package not found"));
+
+        PackageStatusEnum target = PackageStatusEnum.fromCode(statusCode);
+        if (target == null) {
+            throw new ApplicationException(ErrorCodes.INVALID_INPUT, "Unknown target status: " + statusCode);
+        }
+
+        PackageStatusEnum current = PackageStatusEnum.fromCode(packageEntity.getStatus().getCode());
+        if (current == null || !current.canTransitionTo(target)) {
+            String fromName = current != null ? current.getName() : "unknown";
+            throw new ApplicationException(ErrorCodes.INVALID_STATUS_TRANSITION,
+                    "Invalid transition from '" + fromName + "' to '" + target.getName() + "'");
+        }
+
+        if (!SecurityUtils.hasPermission(Permission.PACKAGE_UPDATE)) {
+            throw new ApplicationException(ErrorCodes.FORBIDDEN, "Access denied");
+        }
+
+        PackageStatusEntity targetStatus = packageStatusService.findByCode(statusCode);
+        PackageStatusEntity fromStatus = packageEntity.getStatus();
+
+        packageEntity.setStatus(targetStatus);
+        packageRepository.save(packageEntity);
+        recordStatusChange(packageEntity, fromStatus, targetStatus, userService.getCurrentUser());
+        return packageMapper.toResponse(packageEntity);
+    }
+
+    public List<PackageResponse> findPackagesByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
+        List<PackageEntity> entities;
         if (startDate != null && endDate != null) {
-            return packageRepository.findByRegisteredAtBetween(startDate, endDate);
+            entities = packageRepository.findByRegisteredAtBetween(startDate, endDate);
         } else if (startDate != null) {
-            return packageRepository.findByRegisteredAtAfter(startDate);
+            entities = packageRepository.findByRegisteredAtAfter(startDate);
         } else if (endDate != null) {
-            return packageRepository.findByRegisteredAtBefore(endDate);
-        }
-        return Collections.emptyList();
-    }
-
-    public PackageCountByUserDTO findPackageCountByUserId(Long userId){
-        PackageCountByUserDTO packageCountByUserDTO = packageRepository.findCountByUserId(userId);
-        if (packageCountByUserDTO != null && packageCountByUserDTO.getUserId() != null && packageCountByUserDTO.getPackageCount() != null){
-            return packageCountByUserDTO;
-        }
-        PackageCountByUserDTO packageCountByUserNew = new PackageCountByUserDTO();
-        packageCountByUserNew.setUserId(userId);
-        packageCountByUserNew.setPackageCount((long) 0);
-        return packageCountByUserNew;
-    }
-
-    public List<PackageEntity> findPackagesByStatusIn(List<Integer> packageStatusesId) {
-        if (packageStatusesId.isEmpty()) {
-            throw new IllegalArgumentException("La lista de estados no puede ser nula o vacía");
-        }
-        List<PackageStatusEntity> packageStatusEntities = new ArrayList<>();
-        for(Integer statusId : packageStatusesId){
-            packageStatusEntities.add(packageStatusService.findById(statusId));
-        }
-        return packageRepository.findByStatusIn(packageStatusEntities);
-    }
-
-    public List<PackageCountByUserDTO> findCountByAllUsers(){
-        return packageRepository.findCountByAllUsers();
-    }
-
-    public List<PackageEntity> findAllPackagesByUserId(Long userId){
-        return packageRepository.findAllByOwnerUser_Id(userId);
-    }
-
-    public List<PackageEntity> findAllPackagesByUbication(String origin, String destination){
-        if((origin == null || origin.isEmpty()) && (destination == null || destination.isEmpty())){
+            entities = packageRepository.findByRegisteredAtBefore(endDate);
+        } else {
             return Collections.emptyList();
         }
-
-        if ((origin == null || origin.trim().isEmpty()) && (destination != null)){
-            return packageRepository.findAllByDestination(destination);
-        }
-        else if((destination == null || destination.trim().isEmpty())){
-            return packageRepository.findAllByOrigin(origin);
-        }
-        return packageRepository.findAllByOriginAndDestination(origin, destination);
+        return entities.stream().map(packageMapper::toResponse).toList();
     }
 
+    public PackageCountResponse findPackageCountByUserId(UUID userId) {
+        PackageCountProjection projection = packageRepository.findCountByUserId(userId);
+        if (projection == null || projection.getPackageCount() == null) {
+            return new PackageCountResponse(userId, 0);
+        }
+        return new PackageCountResponse(projection.getUserId(), projection.getPackageCount().intValue());
+    }
+
+    public List<PackageResponse> findPackagesByStatusIn(List<String> statusCodes) {
+        if (statusCodes == null || statusCodes.isEmpty()) {
+            throw new ApplicationException(ErrorCodes.INVALID_INPUT, "Status list cannot be null or empty");
+        }
+        List<PackageStatusEntity> statusEntities = packageStatusService.findByCodeIn(statusCodes);
+        return packageRepository.findByStatusIn(statusEntities).stream().map(packageMapper::toResponse).toList();
+    }
+
+    public List<PackageCountResponse> findCountByAllUsers() {
+        return packageRepository.findCountByAllUsers().stream()
+                .map(projection -> new PackageCountResponse(projection.getUserId(),
+                        projection.getPackageCount() == null ? 0 : projection.getPackageCount().intValue()))
+                .toList();
+    }
+
+    public List<PackageResponse> findAllPackagesByUserId(UUID userId) {
+        return packageRepository.findAllByOwnerUser_Id(userId).stream().map(packageMapper::toResponse).toList();
+    }
+
+    public List<PackageResponse> findAllPackagesByUbication(UUID origin, UUID destination) {
+        List<PackageEntity> entities;
+        if (origin == null && destination == null) {
+            return Collections.emptyList();
+        } else if (origin == null) {
+            entities = packageRepository.findAllByDestination_Uuid(destination);
+        } else if (destination == null) {
+            entities = packageRepository.findAllByOrigin_Uuid(origin);
+        } else {
+            entities = packageRepository.findAllByOrigin_UuidAndDestination_Uuid(origin, destination);
+        }
+        return entities.stream().map(packageMapper::toResponse).toList();
+    }
+
+    private void assertCanUpdate(PackageEntity packageEntity) {
+        assertOwnerOrPermission(packageEntity, Permission.PACKAGE_UPDATE);
+        if (!packageEntity.isCreated()) {
+            throw new ApplicationException(ErrorCodes.PACKAGE_NOT_UPDATABLE,
+                    "Package can only be updated while in 'Created' status");
+        }
+    }
+
+    private void assertCanCancel(PackageEntity packageEntity) {
+        assertOwnerOrPermission(packageEntity, Permission.PACKAGE_CANCEL);
+        if (packageEntity.isDelivered()) {
+            throw new ApplicationException(ErrorCodes.PACKAGE_NOT_CANCELLABLE, "A delivered package cannot be cancelled");
+        }
+        if (packageEntity.isCancelled()) {
+            throw new ApplicationException(ErrorCodes.PACKAGE_NOT_CANCELLABLE, "Package is already cancelled");
+        }
+    }
+
+    private void assertOwnerOrPermission(PackageEntity packageEntity, Permission permission) {
+        boolean isOwner = packageEntity.getOwnerUser() != null
+                && packageEntity.getOwnerUser().getEmail().equals(SecurityUtils.currentUserEmail());
+        if (!isOwner && !SecurityUtils.hasPermission(permission)) {
+            throw new ApplicationException(ErrorCodes.FORBIDDEN, "Access denied");
+        }
+    }
+
+    private void recordStatusChange(PackageEntity packageEntity, PackageStatusEntity from,
+            PackageStatusEntity to, UserEntity changedBy) {
+        PackageStatusHistoryEntity history = new PackageStatusHistoryEntity();
+        history.setPackageEntity(packageEntity);
+        history.setFromStatus(from);
+        history.setToStatus(to);
+        history.setChangedBy(changedBy);
+        statusHistoryRepository.save(history);
+    }
+
+    private Pageable toPageable(Integer page, Integer size) {
+        int pageNum = (page == null || page < 0) ? 0 : page;
+        int pageSize = (size == null || size <= 0) ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
+        return PageRequest.of(pageNum, pageSize);
+    }
 }

@@ -1,8 +1,11 @@
 package com.backend.couriersyncfeat4.repository;
 
-import com.backend.couriersyncfeat4.dto.PackageCountByUserDTO;
+import com.backend.couriersyncfeat4.dto.output.PackageCountProjection;
 import com.backend.couriersyncfeat4.entity.PackageEntity;
 import com.backend.couriersyncfeat4.entity.PackageStatusEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,36 +17,54 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface PackageRepository extends JpaRepository<PackageEntity, Long> {
+public interface PackageRepository extends JpaRepository<PackageEntity, UUID> {
 
-    Optional<PackageEntity> findByTrackingCode(UUID trackingCode);
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
+    Optional<PackageEntity> findByTrackingCode(String trackingCode);
 
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
     List<PackageEntity> findByRegisteredAtBetween(LocalDateTime startDate, LocalDateTime endDate);
 
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
     List<PackageEntity> findByRegisteredAtAfter(LocalDateTime startDate);
 
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
     List<PackageEntity> findByRegisteredAtBefore(LocalDateTime endDate);
 
-    @Query("SELECT new com.backend.couriersyncfeat4.dto.PackageCountByUserDTO(p.ownerUser.id, COUNT(p)) " +
-            "FROM PackageEntity p WHERE p.ownerUser.id = :userId " +
-            "GROUP BY p.ownerUser.id")
-    PackageCountByUserDTO findCountByUserId(@Param("userId") Long userId);
+    @Query("SELECT p.ownerUser.id AS userId, COUNT(p) AS packageCount " +
+            "FROM PackageEntity p WHERE p.ownerUser.id = :userId GROUP BY p.ownerUser.id")
+    PackageCountProjection findCountByUserId(@Param("userId") UUID userId);
 
-    @Query(value = """
-            SELECT new com.backend.couriersyncfeat4.dto.PackageCountByUserDTO(
-                p.ownerUser.id, COUNT(p))
-            FROM PackageEntity p
-            GROUP BY p.ownerUser.id
-            """)
-    List<PackageCountByUserDTO> findCountByAllUsers();
+    @Query("SELECT p.ownerUser.id AS userId, COUNT(p) AS packageCount " +
+            "FROM PackageEntity p GROUP BY p.ownerUser.id")
+    List<PackageCountProjection> findCountByAllUsers();
 
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
     List<PackageEntity> findByStatusIn(List<PackageStatusEntity> packageStatusEntities);
 
-    List<PackageEntity> findAllByOwnerUser_Id(Long ownerUserId);
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
+    List<PackageEntity> findAllByOwnerUser_Id(UUID userId);
 
-    List<PackageEntity> findAllByDestination(String destination);
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
+    List<PackageEntity> findAllByOwnerUser_Email(String email);
 
-    List<PackageEntity> findAllByOrigin(String origin);
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
+    List<PackageEntity> findAllByDestination_Uuid(UUID destinationUuid);
 
-    List<PackageEntity> findAllByOriginAndDestination(String origin, String destination);
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
+    List<PackageEntity> findAllByOrigin_Uuid(UUID originUuid);
+
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
+    List<PackageEntity> findAllByOrigin_UuidAndDestination_Uuid(UUID originUuid, UUID destinationUuid);
+
+    @Override
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
+    List<PackageEntity> findAll();
+
+    @Override
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
+    Page<PackageEntity> findAll(Pageable pageable);
+
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
+    Page<PackageEntity> findAllByOwnerUser_Email(String email, Pageable pageable);
 }

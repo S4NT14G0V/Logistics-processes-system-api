@@ -1,8 +1,14 @@
 package com.backend.couriersyncfeat4.exceptions;
 
+import com.backend.couriersyncfeat4.dto.output.ApiErrorResponse;
+import graphql.GraphQLError;
+import graphql.GraphqlErrorBuilder;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.graphql.data.method.annotation.GraphQlExceptionHandler;
+import org.springframework.graphql.execution.ErrorType;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -14,11 +20,8 @@ import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import com.backend.couriersyncfeat4.dto.output.ApiErrorResponse;
-
-import jakarta.servlet.http.HttpServletRequest;
-
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -38,7 +41,7 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
         );
         var response = new ApiErrorResponse(
                 guid,
-                exception.getErrorCode(),
+                exception.getErrorCode().getCode(),
                 exception.getMessage(),
                 exception.getHttpStatus().value(),
                 exception.getHttpStatus().name(),
@@ -47,6 +50,19 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
                 LocalDateTime.now()
         );
         return new ResponseEntity<>(response, exception.getHttpStatus());
+    }
+
+    @GraphQlExceptionHandler
+    public GraphQLError handleGraphQlApplicationException(final ApplicationException exception) {
+        log.error("GraphQL error code={}; message: {}", exception.getErrorCode().getCode(),
+                exception.getMessage());
+        return GraphqlErrorBuilder.newError()
+                .message(exception.getMessage())
+                .errorType(toErrorType(exception.getHttpStatus()))
+                .extensions(Map.of(
+                        "code", exception.getErrorCode().getCode(),
+                        "status", exception.getHttpStatus().value()))
+                .build();
     }
 
     @Override
@@ -101,6 +117,16 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
                 LocalDateTime.now()
         );
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    private static ErrorType toErrorType(HttpStatus status) {
+        return switch (status) {
+            case BAD_REQUEST -> ErrorType.BAD_REQUEST;
+            case UNAUTHORIZED -> ErrorType.UNAUTHORIZED;
+            case FORBIDDEN -> ErrorType.FORBIDDEN;
+            case NOT_FOUND -> ErrorType.NOT_FOUND;
+            default -> ErrorType.INTERNAL_ERROR;
+        };
     }
 
 }
