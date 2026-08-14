@@ -8,11 +8,14 @@ package com.backend.couriersyncfeat4.config;
  */
 public enum Permission {
 
-    PACKAGE_CREATE("package:create"),
+    PACKAGE_CREATE_ALL("package:create:all"),
+    PACKAGE_CREATE_OWN("package:create:own"),
     PACKAGE_READ_ALL("package:read:all"),
     PACKAGE_READ_OWN("package:read:own"),
-    PACKAGE_UPDATE("package:update"),
-    PACKAGE_CANCEL("package:cancel"),
+    PACKAGE_UPDATE_ALL("package:update:all"),
+    PACKAGE_UPDATE_OWN("package:update:own"),
+    PACKAGE_CANCEL_ALL("package:cancel:all"),
+    PACKAGE_CANCEL_OWN("package:cancel:own"),
 
     USER_CREATE("user:create"),
     USER_READ("user:read"),

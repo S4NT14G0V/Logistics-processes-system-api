@@ -1,0 +1,29 @@
+type PlaceResponse {
+    uuid: ID!
+    name: String!
+    address: String
+    city: String
+    department: String
+    latitude: Float
+    longitude: Float
+}
+
+input PlaceInput {
+    name: String!
+    address: String!
+    city: String!
+    department: String!
+    latitude: Float
+    longitude: Float
+}
+
+extend type Query {
+    findAllPlaces: [PlaceResponse!]!
+    findPlaceByUuid(uuid: ID!): PlaceResponse
+}
+
+extend type Mutation {
+    createPlace(input: PlaceInput!): PlaceResponse!
+    updatePlace(uuid: ID!, input: PlaceInput!): PlaceResponse!
+    deletePlace(uuid: ID!): Boolean!
+}

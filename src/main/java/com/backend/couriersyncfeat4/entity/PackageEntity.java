@@ -43,6 +43,27 @@ public class PackageEntity {
 
     private String cancellationReason;
 
+    @Column(name = "weight_kg")
+    private Double weightKg;
+
+    @Column(name = "length_cm")
+    private Double lengthCm;
+
+    @Column(name = "width_cm")
+    private Double widthCm;
+
+    @Column(name = "height_cm")
+    private Double heightCm;
+
+    @Column(name = "distance_km")
+    private Double distanceKm;
+
+    @Column(name = "declared_value")
+    private Double declaredValue;
+
+    @Column(name = "price")
+    private Double price;
+
     @OneToMany(mappedBy = "packageEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<LocationEntity> locationEntities;
 
@@ -50,6 +71,7 @@ public class PackageEntity {
     private List<AlertEntity> alertEntities;
 
     @OneToMany(mappedBy = "packageEntity", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("changedAt ASC")
     private List<PackageStatusHistoryEntity> statusHistory;
 
     @ManyToOne
@@ -93,6 +115,10 @@ public class PackageEntity {
         return hasStatus(PackageStatusEnum.CREATED);
     }
 
+    public boolean isProposed() {
+        return hasStatus(PackageStatusEnum.PROPOSED);
+    }
+
     public boolean isInTransit() {
         return hasStatus(PackageStatusEnum.IN_TRANSIT);
     }
@@ -109,8 +135,8 @@ public class PackageEntity {
         return status != null && expected.getCode().equals(status.getCode());
     }
 
-    private static String generateTrackingCode() {
-        return "AMAZN-" + randomSegment(5) + "-" + randomSegment(6);
+    public static String generateTrackingCode() {
+        return randomSegment(6) + randomSegment(5) + "-" + randomSegment(6);
     }
 
     private static String randomSegment(int length) {

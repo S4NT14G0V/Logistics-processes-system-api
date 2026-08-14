@@ -1,6 +1,7 @@
 package com.backend.couriersyncfeat4.enums;
 
 public enum PackageStatusEnum {
+    PROPOSED("PROPOSED", "Proposed"),
     CREATED("CREATED", "Created"),
     IN_TRANSIT("IN_TRANSIT", "In Transit"),
     DELIVERED("DELIVERED", "Delivered"),
@@ -33,6 +34,7 @@ public enum PackageStatusEnum {
 
     public boolean canTransitionTo(PackageStatusEnum target) {
         return switch (this) {
+            case PROPOSED -> target == CREATED || target == CANCELLED;
             case CREATED -> target == IN_TRANSIT || target == CANCELLED;
             case IN_TRANSIT -> target == DELIVERED;
             case DELIVERED, CANCELLED -> false;

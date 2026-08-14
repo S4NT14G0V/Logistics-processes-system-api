@@ -1,46 +1,108 @@
-type Package {
-    id: ID!
-    ownerUser: User!
-    status: PackageStatus!
-    trackingCode: String!
-    description: String!
-    registeredAt: String!
-    origin: String!
-    destination: String!
-}
-
-input InputPackageAdd {
-    ownerUser: UserInputAux!
-    status: PackageStatusInput!
-    description: String
-    origin: String!
-    destination: String!
-}
-
-input InputPackageUpdate {
-    id: ID!
-    ownerUser: UserInputAux
-    status: PackageStatusInput
-    description: String
-    origin: String
-    destination: String
-}
-
-type PackageStatus {
-    id: ID!
+type PackageStatusResponse {
+    id: Int
+    code: String!
     name: String!
     description: String
 }
 
-input PackageStatusInput {
-    id: ID!
+type PackageStatusHistoryResponse {
+    changedAt: String
+    fromStatus: PackageStatusResponse
+    toStatus: PackageStatusResponse
+    changedBy: String
+}
+
+type PackageResponse {
+    uuid: ID!
+    trackingCode: String!
+    description: String
+    registeredAt: String
+    updatedAt: String
+    cancelledAt: String
+    cancellationReason: String
+    weightKg: Float
+    lengthCm: Float
+    widthCm: Float
+    heightCm: Float
+    distanceKm: Float
+    declaredValue: Float
+    price: Float
+    status: PackageStatusResponse
+    origin: PlaceResponse
+    destination: PlaceResponse
+    history: [PackageStatusHistoryResponse!]!
+}
+
+type PackageTrackingResponse {
+    trackingCode: String!
+    description: String
+    registeredAt: String
+    updatedAt: String
+    cancelledAt: String
+    status: PackageStatusResponse
+    origin: PlaceResponse
+    destination: PlaceResponse
+    history: [PackageStatusHistoryResponse!]!
+}
+
+type PackageCountResponse {
+    userId: ID
+    packageCount: Int
+}
+
+type UserPackageCount {
+    userId: ID
+    packageCount: Int
+}
+
+type StatusCount {
+    statusCode: String
+    count: Int
+}
+
+type PackageStatsResponse {
+    users: [UserPackageCount!]!
+    totalPackages: Int
 }
 
 input PackageInput {
-    id: ID!
+    description: String
+    origin: ID!
+    destination: ID!
+    ownerUserId: ID
+    weightKg: Float
+    lengthCm: Float
+    widthCm: Float
+    heightCm: Float
+    declaredValue: Float
 }
 
-type PackageCount {
-    userId: Int!
-    packageCount: Int!
+input PackageUpdateInput {
+    description: String
+    origin: ID
+    destination: ID
+}
+
+extend type Query {
+    findAllPackages(page: Int, size: Int): [PackageResponse!]!
+    findPackageById(id: ID!): PackageResponse
+    findPackageByTrackingCode(trackingCode: String!): PackageTrackingResponse
+    findPackagesByDateRange(page: Int, size: Int, startDate: String, endDate: String): [PackageResponse!]!
+    findPackageCountByUserId(userId: ID!): PackageCountResponse
+    findPackagesByStatusIn(page: Int, size: Int, packageStatuses: [String!]): [PackageResponse!]!
+    findPackageCountByAllUsers: PackageStatsResponse
+    findPackageCountByAllStatus: [StatusCount!]!
+    findAllPackagesByUserId(page: Int, size: Int, userId: ID!): [PackageResponse!]!
+    findAllPackagesByPlace(page: Int, size: Int, origin: ID, destination: ID): [PackageResponse!]!
+}
+
+extend type Mutation {
+    createPackage(input: PackageInput!): PackageResponse!
+    proposePackage(input: PackageInput!): PackageResponse!
+    approvePackage(id: ID!): PackageResponse!
+    rejectPackage(id: ID!, reason: String): PackageResponse!
+    reactivatePackage(id: ID!): PackageResponse!
+    updatePackage(id: ID!, input: PackageUpdateInput!): PackageResponse!
+    deletePackageById(id: ID!, reason: String): PackageResponse!
+    changePackageStatus(id: ID!, statusCode: String!): PackageResponse!
 }

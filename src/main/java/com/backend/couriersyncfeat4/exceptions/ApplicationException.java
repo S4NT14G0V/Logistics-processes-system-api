@@ -19,4 +19,10 @@ public class ApplicationException extends RuntimeException {
         this.errorCode = errorCode;
         this.httpStatus = httpStatus;
     }
+
+    public ApplicationException(ErrorCodes errorCode) {
+        super(errorCode.getMessage());
+        this.errorCode = errorCode;
+        this.httpStatus = HttpStatus.valueOf(errorCode.getStatusCode());
+    }
 }

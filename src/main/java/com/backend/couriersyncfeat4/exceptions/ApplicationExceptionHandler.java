@@ -13,6 +13,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -62,6 +63,15 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
                 .extensions(Map.of(
                         "code", exception.getErrorCode().getCode(),
                         "status", exception.getHttpStatus().value()))
+                .build();
+    }
+
+    @GraphQlExceptionHandler
+    public GraphQLError handleAccessDeniedException(final AccessDeniedException exception) {
+        log.warn("Forbidden: {}", exception.getMessage());
+        return GraphqlErrorBuilder.newError()
+                .message("Forbidden")
+                .errorType(ErrorType.FORBIDDEN)
                 .build();
     }
 
