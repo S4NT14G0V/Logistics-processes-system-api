@@ -14,7 +14,6 @@ import com.backend.couriersyncfeat4.enums.PackageStatusEnum;
 import com.backend.couriersyncfeat4.exceptions.ApplicationException;
 import com.backend.couriersyncfeat4.exceptions.ErrorCodes;
 import com.backend.couriersyncfeat4.mapper.PackageMapper;
-import com.backend.couriersyncfeat4.mapper.PlaceMapper;
 import com.backend.couriersyncfeat4.repository.PackageRepository;
 import com.backend.couriersyncfeat4.repository.PackageStatusHistoryRepository;
 import com.backend.couriersyncfeat4.security.SecurityUtils;
@@ -40,19 +39,17 @@ public class PackageService {
     private final PackageStatusHistoryRepository statusHistoryRepository;
     private final PlaceService placeService;
     private final PackageMapper packageMapper;
-    private final PlaceMapper placeMapper;
 
     @Autowired
     public PackageService(PackageRepository packageRepository, UserService userService,
             PackageStatusService packageStatusService, PackageStatusHistoryRepository statusHistoryRepository,
-            PlaceService placeService, PackageMapper packageMapper, PlaceMapper placeMapper) {
+            PlaceService placeService, PackageMapper packageMapper) {
         this.packageRepository = packageRepository;
         this.userService = userService;
         this.packageStatusService = packageStatusService;
         this.statusHistoryRepository = statusHistoryRepository;
         this.placeService = placeService;
         this.packageMapper = packageMapper;
-        this.placeMapper = placeMapper;
     }
 
     public PackageResponse createPackage(PackageInput input) {

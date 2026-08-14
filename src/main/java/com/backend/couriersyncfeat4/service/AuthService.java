@@ -13,7 +13,6 @@ import com.backend.couriersyncfeat4.exceptions.ErrorCodes;
 import com.backend.couriersyncfeat4.security.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
@@ -39,7 +38,7 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
         if (userService.existsByEmail(request.email())) {
             throw new ApplicationException(
-                    ErrorCodes.CONFLICT.getCode(), "Email already registered", HttpStatus.CONFLICT);
+                    ErrorCodes.CONFLICT, "Email already registered");
         }
 
         String roleName = (adminEmail != null && adminEmail.equals(request.email())) ? "ADMIN" : "CUSTOMER";
@@ -57,7 +56,7 @@ public class AuthService {
                     new UsernamePasswordAuthenticationToken(request.email(), request.password()));
         } catch (AuthenticationException ex) {
             throw new ApplicationException(
-                    ErrorCodes.UNAUTHORIZED.getCode(), "Invalid email or password", HttpStatus.UNAUTHORIZED);
+                    ErrorCodes.UNAUTHORIZED, "Invalid email or password");
         }
 
         UserEntity user = userService.findUserByEmail(request.email());

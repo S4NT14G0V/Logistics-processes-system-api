@@ -7,7 +7,6 @@ import com.backend.couriersyncfeat4.exceptions.ErrorCodes;
 import com.backend.couriersyncfeat4.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -58,11 +57,11 @@ public class RefreshTokenService {
     private RefreshTokenEntity findValid(String rawToken) {
         RefreshTokenEntity entity = refreshTokenRepository.findByTokenHash(hash(rawToken))
                 .orElseThrow(() -> new ApplicationException(
-                        ErrorCodes.UNAUTHORIZED.getCode(), "Invalid refresh token", HttpStatus.UNAUTHORIZED));
+                        ErrorCodes.UNAUTHORIZED, "Invalid refresh token"));
 
         if (entity.isRevoked() || entity.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new ApplicationException(
-                    ErrorCodes.UNAUTHORIZED.getCode(), "Refresh token expired or revoked", HttpStatus.UNAUTHORIZED);
+                    ErrorCodes.UNAUTHORIZED, "Refresh token expired or revoked");
         }
         return entity;
     }
