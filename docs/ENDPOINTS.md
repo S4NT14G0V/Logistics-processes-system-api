@@ -53,6 +53,7 @@ Authorization: Bearer <accessToken>
 |---                           |---                               |---                     |---                                          |---    |
 | `findAllPackages`            | `page, size`                     | `read:all` / `read:own`| Lista paginada                              | `El customer ve solo sus paquetes` |
 | `findPackageById`            | `id: ID!`                        | `read:all` / `read:own`| Detalle de un paquete (incluye `history`)   | `El customer ve solo sus paquetes` |
+| `findPackageHistory`         | `packageId: ID!`                 | `read:all` / `read:own`| Historial de estados de un paquete          | `El customer ve solo sus paquetes` |
 | `findPackageByTrackingCode`  | `trackingCode: String!`          | **Público**            | Rastreo por código           | `Devuelve PackageTrackingResponse (sin datos sensibles)` |
 | `findPackagesByDateRange`    | `page, size, startDate, endDate` | `read:all` / `read:own`| Por rango de fechas          | `El customer ve solo sus paquetes` |
 | `findPackageCountByUserId`   | `userId: ID!`                    | `read:all` / `read:own`| Conteo por usuario           | `El customer ve solo sus paquetes si el llamado tiene su userId` |
@@ -74,7 +75,7 @@ Authorization: Bearer <accessToken>
 | `rejectPackage`      | `id: ID!, reason`      | `update:all` | Se rechaza una propuesta                    | `Cambia de estado de PROPOSED → CANCELLED`           |
 | `reactivatePackage`  | `id: ID!`              | `update:all` | Descancela un paquete cancelado             | `Cambia de estado de CANCELLED → CREATED`            |
 | `updatePackage`      | `id: ID!, input: PackageUpdateInput!` | `update:all` / `update:own` | Edita descripción/origen/destino | `Solo cambia cuando tiene el estado en CREATED` |
-| `deletePackageById`  | `id: ID!, reason`      | `cancel:all` / `cancel:own` | Cancela el paquete, no lo elimina | `No se puede cancelar si está DELIVERED ni CANCELLED` |
+| `cancelPackage`      | `id: ID!, reason`      | `cancel:all` / `cancel:own` | Cancela el paquete, no lo elimina | `No se puede cancelar si está DELIVERED ni CANCELLED` |
 | `changePackageStatus`| `id: ID!, statusCode: String!`        | `update:all` | Avanza la máquina de estados (solo admin). | — |
 
 ### Estados (`statusCode`)

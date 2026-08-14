@@ -92,3 +92,21 @@ docker-compose up
 Enter to the url of backend that you put in the `.env` with the extension `/oauth2/authorization/google`, example: `localhost:8080/oauth2/authorization/google`, and in that site you log in with the google account, after you are going to be redirected to the frontend url of you `.env` wit the extension `/auth/callback?token=`, example: `http://localhost:3001/auth/callback?token=eyJhbGci8...`, then with the token of that url you can execute calls to the `/graphql` endpoint correctly.
 
 Test the endpoint in the extension `/graphiql` of your backend url, at this point for testing you need to put `{"Authorization":"Bearer token"}` after replaced the token value. To see more about the data point access press the button in the sidebar called `Documentation`
+
+---
+
+## Testing automatizado (Testcontainers)
+
+Los tests de integración usan **Testcontainers** (PostgreSQL real) en lugar de H2. Decisión:
+
+- H2 no ejecuta las migraciones Flyway (son Postgres: `gen_random_uuid()`, `DO $$`, `uuid`, `ON CONFLICT`...) y obligaba a un seeder manual de permisos/roles/estados.
+- Testcontainers levanta `postgres:18`, corre `V1..V12`, valida el esquema con `ddl-auto=validate` y ejercita el flujo HTTP real (`register` → JWT → `JwtAuthenticationFilter` → `@PreAuthorize`). Paridad total con producción, a cambio de requerir Docker.
+
+```shell
+mvnw test
+```
+
+Documentación:
+
+- [`docs/TEST.md`](docs/TEST.md) — qué se testea (tabla con checks).
+- [`docs/ENDPOINTS.md`](docs/ENDPOINTS.md) — endpoints y permisos por rol.
