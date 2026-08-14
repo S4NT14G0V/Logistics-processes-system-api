@@ -15,11 +15,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.time.LocalDateTime;
@@ -88,6 +90,30 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
         log.warn("GraphQL validation error: {}", message);
         return GraphqlErrorBuilder.newError()
                 .message(message)
+                .errorType(ErrorType.BAD_REQUEST)
+                .extensions(Map.of(
+                        "code", ErrorCodes.INVALID_INPUT.getCode(),
+                        "status", ErrorCodes.INVALID_INPUT.getStatusCode()))
+                .build();
+    }
+
+    @GraphQlExceptionHandler
+    public GraphQLError handleTypeMismatchException(final MethodArgumentTypeMismatchException exception) {
+        log.warn("GraphQL argument error: {}", exception.getMessage());
+        return GraphqlErrorBuilder.newError()
+                .message("Invalid argument value for '" + exception.getName() + "'")
+                .errorType(ErrorType.BAD_REQUEST)
+                .extensions(Map.of(
+                        "code", ErrorCodes.INVALID_INPUT.getCode(),
+                        "status", ErrorCodes.INVALID_INPUT.getStatusCode()))
+                .build();
+    }
+
+    @GraphQlExceptionHandler
+    public GraphQLError handleBindException(final BindException exception) {
+        log.warn("GraphQL binding error: {}", exception.getMessage());
+        return GraphqlErrorBuilder.newError()
+                .message("Invalid argument")
                 .errorType(ErrorType.BAD_REQUEST)
                 .extensions(Map.of(
                         "code", ErrorCodes.INVALID_INPUT.getCode(),

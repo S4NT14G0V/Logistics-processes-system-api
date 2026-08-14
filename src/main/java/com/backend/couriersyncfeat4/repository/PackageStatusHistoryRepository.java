@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface PackageStatusHistoryRepository extends JpaRepository<PackageStatusHistoryEntity, Long> {
+public interface PackageStatusHistoryRepository extends JpaRepository<PackageStatusHistoryEntity, UUID> {
 
     List<PackageStatusHistoryEntity> findAllByPackageEntity_UuidOrderByChangedAtAsc(UUID packageUuid);
 }

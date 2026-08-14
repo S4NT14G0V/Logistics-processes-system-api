@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "package_status_history")
@@ -15,8 +16,8 @@ import java.time.LocalDateTime;
 public class PackageStatusHistoryEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @ManyToOne
     @JoinColumn(name = "package_id", nullable = false)
@@ -36,6 +37,9 @@ public class PackageStatusHistoryEntity {
     @ManyToOne
     @JoinColumn(name = "changed_by_user_id")
     private UserEntity changedBy;
+
+    @Column(name = "description")
+    private String description;
 
     @PrePersist
     public void prePersist() {

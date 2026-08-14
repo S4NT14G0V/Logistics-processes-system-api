@@ -10,6 +10,7 @@ type PackageStatusHistoryResponse {
     fromStatus: PackageStatusResponse
     toStatus: PackageStatusResponse
     changedBy: String
+    description: String
 }
 
 type PackageResponse {

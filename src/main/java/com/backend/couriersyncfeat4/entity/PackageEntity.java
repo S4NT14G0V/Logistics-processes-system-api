@@ -136,7 +136,7 @@ public class PackageEntity {
     }
 
     public static String generateTrackingCode() {
-        return randomSegment(6) + randomSegment(5) + "-" + randomSegment(6);
+        return randomSegment(6) + "-" + randomSegment(5) + "-" + randomSegment(6);
     }
 
     private static String randomSegment(int length) {

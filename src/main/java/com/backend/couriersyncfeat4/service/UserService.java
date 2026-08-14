@@ -4,47 +4,37 @@ import com.backend.couriersyncfeat4.entity.CustomResponseEntity;
 import com.backend.couriersyncfeat4.entity.RoleEntity;
 import com.backend.couriersyncfeat4.entity.UserEntity;
 import com.backend.couriersyncfeat4.exceptions.ApplicationException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import com.backend.couriersyncfeat4.exceptions.ErrorCodes;
 import com.backend.couriersyncfeat4.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import com.backend.couriersyncfeat4.security.SecurityUtils;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
+@AllArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
     private final RoleService roleService;
 
-    @Autowired
-    public UserService(UserRepository userRepository,  RoleService roleService) {
-        this.userRepository = userRepository;
-        this.roleService = roleService;
-    }
-
     public UserEntity getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new ApplicationException("user-not-authenticated", "User not authenticated", HttpStatus.UNAUTHORIZED);
-        }
-
-        String email = authentication.getName();
-        return userRepository.findByEmail(email);
+        return userRepository.findByEmail(SecurityUtils.currentUserEmail())
+                .orElseThrow(() -> new ApplicationException(ErrorCodes.USER_NOT_FOUND));
     }
 
-    // TODO: make validations in each function
     public List<UserEntity> findAllUsers() {
         return userRepository.findAll();
     }
 
-    public UserEntity findUserById(Long id) {
+    public UserEntity findUserById(UUID id) {
+        if (id == null) {
+            throw new ApplicationException(ErrorCodes.INVALID_INPUT, "User id is required");
+        }
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ApplicationException(ErrorCodes.USER_NOT_FOUND));
     }
 
     public UserEntity addUser(UserEntity user) {
@@ -61,7 +51,7 @@ public class UserService {
         return userEntity;
     }
 
-    public CustomResponseEntity deleteUser(Long id){
+    public CustomResponseEntity deleteUser(UUID id) {
         if (!userRepository.existsById(id)) {
             return new CustomResponseEntity(false, "User with id " + id + " does not exist");
         }
@@ -69,11 +59,12 @@ public class UserService {
         return new CustomResponseEntity(true, "User with id " + id + " successfully deleted");
     }
 
-    public UserEntity findUserByEmail(String email){
-        return userRepository.findByEmail(email);
+    public UserEntity findUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ApplicationException(ErrorCodes.USER_NOT_FOUND));
     }
 
-    public boolean existsByEmail(String email){
+    public boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);
     }
 

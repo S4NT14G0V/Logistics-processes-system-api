@@ -6,7 +6,8 @@ public record PackageStatusHistoryResponse(
     LocalDateTime changedAt,
     PackageStatusResponse fromStatus,
     PackageStatusResponse toStatus,
-    String changedBy
+    String changedBy,
+    String description
 ) {
 
 }

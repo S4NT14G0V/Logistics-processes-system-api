@@ -167,6 +167,7 @@ public class PackageService {
     }
 
     public PackageEntity getPackageById(UUID id) {
+        if (id == null) throw new ApplicationException(ErrorCodes.INVALID_INPUT, "Package id is required");
         return packageRepository.findById(id)
                 .orElseThrow(() -> new ApplicationException(ErrorCodes.PACKAGE_NOT_FOUND, "Package not found"));
     }
@@ -268,6 +269,7 @@ public class PackageService {
 
     public PackageCountResponse findPackageCountByUserId(UUID userId) {
         assertOwnerOrPermissionByUserId(userId, Permission.PACKAGE_READ_ALL);
+        userService.findUserById(userId);
         PackageCountProjection projection = packageRepository.findCountByUserId(userId);
         if (projection == null || projection.getPackageCount() == null) {
             return new PackageCountResponse(userId, 0);
@@ -304,6 +306,7 @@ public class PackageService {
 
     public List<PackageResponse> findAllPackagesByUserId(Integer page, Integer size, UUID userId) {
         assertOwnerOrPermissionByUserId(userId, Permission.PACKAGE_READ_ALL);
+        userService.findUserById(userId);
         Pageable pageable = toPageable(page, size);
         return packageRepository.findAllByOwnerUser_Id(userId, pageable).getContent()
                 .stream().map(packageMapper::toResponse).toList();
@@ -403,6 +406,7 @@ public class PackageService {
         history.setFromStatus(from);
         history.setToStatus(to);
         history.setChangedBy(changedBy);
+        history.setDescription(buildTransitionDescription(from, to));
         statusHistoryRepository.save(history);
 
         List<PackageStatusHistoryEntity> entries = new ArrayList<>();
@@ -411,6 +415,36 @@ public class PackageService {
         }
         entries.add(history);
         packageEntity.setStatusHistory(entries);
+    }
+
+    private String buildTransitionDescription(PackageStatusEntity from, PackageStatusEntity to) {
+        String fromCode = from != null ? from.getCode() : null;
+        String toCode = to != null ? to.getCode() : null;
+        if ("CREATED".equals(toCode)) {
+            if (fromCode == null) {
+                return "Paquete creado";
+            }
+            if ("PROPOSED".equals(fromCode)) {
+                return "Propuesta aprobada";
+            }
+            if ("CANCELLED".equals(fromCode)) {
+                return "Paquete reactivado";
+            }
+            return "Paquete en bodega";
+        }
+        if ("PROPOSED".equals(toCode)) {
+            return "Propuesta de envío creada";
+        }
+        if ("IN_TRANSIT".equals(toCode)) {
+            return "Paquete en transporte";
+        }
+        if ("DELIVERED".equals(toCode)) {
+            return "Paquete entregado";
+        }
+        if ("CANCELLED".equals(toCode)) {
+            return "PROPOSED".equals(fromCode) ? "Propuesta rechazada" : "Paquete cancelado";
+        }
+        return "Cambio de estado";
     }
 
     private Pageable toPageable(Integer page, Integer size) {

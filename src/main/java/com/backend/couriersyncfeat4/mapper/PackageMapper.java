@@ -89,7 +89,8 @@ public class PackageMapper {
                         h.getChangedAt(),
                         toStatusResponse(h.getFromStatus()),
                         toStatusResponse(h.getToStatus()),
-                        null))
+                        null,
+                        h.getDescription()))
                 .toList();
     }
 
@@ -98,7 +99,8 @@ public class PackageMapper {
                 history.getChangedAt(),
                 toStatusResponse(history.getFromStatus()),
                 toStatusResponse(history.getToStatus()),
-                history.getChangedBy() != null ? history.getChangedBy().getEmail() : null);
+                history.getChangedBy() != null ? history.getChangedBy().getEmail() : null,
+                history.getDescription());
     }
 
     private PackageStatusResponse toStatusResponse(PackageStatusEntity status) {

@@ -5,6 +5,7 @@ import org.springframework.graphql.test.tester.GraphQlTester;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,6 +35,10 @@ class PackageEndpointIntegrationTest extends IntegrationTestBase {
         String others = createPackageUuid(adminToken);
         expectForbidden(as(custToken).document("query($id: ID!){ findPackageById(id: $id){ uuid } }")
                 .variable("id", others).execute().errors());
+
+        // ID inválido -> BAD_REQUEST (INVALID_INPUT), no INTERNAL_ERROR
+        expectErrorCode(as(custToken).document("query($id: ID!){ findPackageById(id: $id){ uuid } }")
+                .variable("id", "not-a-uuid").execute().errors(), "INVALID_INPUT");
     }
 
     @Test
@@ -56,10 +61,11 @@ class PackageEndpointIntegrationTest extends IntegrationTestBase {
     void findPackageHistory() {
         String uuid = propose(custToken).uuid();
         GraphQlTester.Response r = as(custToken)
-                .document("query($id: ID!){ findPackageHistory(packageId: $id){ changedAt fromStatus{ code } toStatus{ code } } }")
+                .document("query($id: ID!){ findPackageHistory(packageId: $id){ changedAt fromStatus{ code } toStatus{ code } description } }")
                 .variable("id", uuid).execute();
         r.path("findPackageHistory").entityList(Object.class).satisfies(l -> assertThat(l).hasSizeGreaterThan(0));
         r.path("findPackageHistory[0].toStatus.code").entity(String.class).isEqualTo("PROPOSED");
+        r.path("findPackageHistory[0].description").entity(String.class).satisfies(d -> assertThat(d).isNotBlank());
     }
 
     @Test
@@ -81,6 +87,10 @@ class PackageEndpointIntegrationTest extends IntegrationTestBase {
 
         expectForbidden(as(custToken).document("query($uid: ID!){ findPackageCountByUserId(userId: $uid){ packageCount } }")
                 .variable("uid", adminId).execute().errors());
+
+        // userId inexistente -> USER_NOT_FOUND
+        expectErrorCode(as(adminToken).document("query($uid: ID!){ findPackageCountByUserId(userId: $uid){ packageCount } }")
+                .variable("uid", UUID.randomUUID().toString()).execute().errors(), "USER_NOT_FOUND");
     }
 
     @Test
@@ -124,6 +134,10 @@ class PackageEndpointIntegrationTest extends IntegrationTestBase {
 
         expectForbidden(as(custToken).document("query($uid: ID!){ findAllPackagesByUserId(userId: $uid){ uuid } }")
                 .variable("uid", adminId).execute().errors());
+
+        // userId inexistente -> USER_NOT_FOUND
+        expectErrorCode(as(adminToken).document("query($uid: ID!){ findAllPackagesByUserId(userId: $uid){ uuid } }")
+                .variable("uid", UUID.randomUUID().toString()).execute().errors(), "USER_NOT_FOUND");
     }
 
     @Test
