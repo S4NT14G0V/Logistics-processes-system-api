@@ -3,6 +3,7 @@ package com.backend.couriersyncfeat4.controller;
 import com.backend.couriersyncfeat4.dto.input.PlaceInput;
 import com.backend.couriersyncfeat4.dto.output.PlaceResponse;
 import com.backend.couriersyncfeat4.service.PlaceService;
+import jakarta.validation.Valid;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -35,13 +36,13 @@ public class PlaceController {
 
     @PreAuthorize("hasAuthority('package:create:all')")
     @MutationMapping
-    public PlaceResponse createPlace(@Argument("input") PlaceInput input) {
+    public PlaceResponse createPlace(@Argument("input") @Valid PlaceInput input) {
         return placeService.create(input);
     }
 
     @PreAuthorize("hasAuthority('package:update:all')")
     @MutationMapping
-    public PlaceResponse updatePlace(@Argument UUID uuid, @Argument("input") PlaceInput input) {
+    public PlaceResponse updatePlace(@Argument UUID uuid, @Argument("input") @Valid PlaceInput input) {
         return placeService.update(uuid, input);
     }
 

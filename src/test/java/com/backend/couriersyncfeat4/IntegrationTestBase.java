@@ -4,9 +4,13 @@ import com.backend.couriersyncfeat4.repository.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.graphql.test.tester.GraphQlTester;
+import org.springframework.graphql.test.tester.HttpGraphQlTester;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -15,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.web.reactive.server.WebTestClient;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.util.HashMap;
@@ -26,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("integration")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@ExtendWith(OperationLoggerExtension.class)
 public abstract class IntegrationTestBase {
 
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:18")
@@ -48,11 +54,23 @@ public abstract class IntegrationTestBase {
     protected static final String CUST_EMAIL = "customer@test.com";
     protected static final String PASSWORD = "Passw0rd!123";
 
+    protected static final String PACKAGE_FIELDS =
+            "{ uuid trackingCode description status{ code name } origin{ uuid name } destination{ uuid name } history{ changedAt fromStatus{ code } toStatus{ code } } price weightKg }";
+    protected static final String TRACKING_FIELDS =
+            "{ trackingCode description status{ code name } history{ changedAt toStatus{ code } } }";
+    protected static final String PLACE_FIELDS =
+            "{ uuid name address city department latitude longitude }";
+
     @Autowired
     protected TestRestTemplate rest;
 
+    @LocalServerPort
+    protected int port;
+
     @Autowired
     protected UserRepository userRepository;
+
+    protected HttpGraphQlTester graphQlTester;
 
     protected String adminToken;
     protected String custToken;
@@ -61,8 +79,14 @@ public abstract class IntegrationTestBase {
     protected String adminId;
     protected String custId;
 
+    protected record PkgRef(String uuid, String trackingCode) {
+    }
+
     @BeforeAll
     void setup() {
+        graphQlTester = HttpGraphQlTester.create(
+                WebTestClient.bindToServer().baseUrl("http://localhost:" + port + "/graphql").build());
+
         if (!userRepository.existsByEmail(ADMIN_EMAIL)) {
             register(ADMIN_EMAIL);
         }
@@ -73,33 +97,52 @@ public abstract class IntegrationTestBase {
         adminToken = login(ADMIN_EMAIL).get("accessToken").asText();
         custToken = login(CUST_EMAIL).get("accessToken").asText();
 
-        originId = createPlace(adminToken, "Origen " + UUID.randomUUID(), 4.7110, -74.0721);
-        destId = createPlace(adminToken, "Destino " + UUID.randomUUID(), 6.2442, -75.5812);
+        originId = createPlaceUuid(adminToken, "Origen " + UUID.randomUUID(), 4.7110, -74.0721);
+        destId = createPlaceUuid(adminToken, "Destino " + UUID.randomUUID(), 6.2442, -75.5812);
 
         adminId = userRepository.findByEmail(ADMIN_EMAIL).orElseThrow().getId().toString();
         custId = userRepository.findByEmail(CUST_EMAIL).orElseThrow().getId().toString();
     }
 
-    // ---------- helpers ----------
+    // ---------- GraphQL ----------
 
-    protected boolean errors(JsonNode resp) {
-        return resp == null || resp.hasNonNull("errors");
+    protected HttpGraphQlTester as(String token) {
+        if (token == null) {
+            return graphQlTester;
+        }
+        return graphQlTester.mutate().headers(h -> h.setBearerAuth(token)).build();
     }
 
-    protected JsonNode graphql(String token, String query, Map<String, Object> vars) {
-        HttpHeaders h = new HttpHeaders();
-        h.setContentType(MediaType.APPLICATION_JSON);
-        if (token != null) {
-            h.setBearerAuth(token);
-        }
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("query", query);
-        if (vars != null) {
-            payload.put("variables", vars);
-        }
-        ResponseEntity<JsonNode> resp = rest.exchange("/graphql", HttpMethod.POST, new HttpEntity<>(payload, h), JsonNode.class);
-        return resp.getBody();
+    protected PkgRef propose(String token) {
+        GraphQlTester.Response r = as(token)
+                .document("mutation($i: PackageInput!){ proposePackage(input: $i){ uuid trackingCode } }")
+                .variable("i", baseInput())
+                .execute();
+        return new PkgRef(
+                r.path("proposePackage.uuid").entity(String.class).get(),
+                r.path("proposePackage.trackingCode").entity(String.class).get());
     }
+
+    protected String createPackageUuid(String token) {
+        return as(token)
+                .document("mutation($i: PackageInput!){ createPackage(input: $i){ uuid } }")
+                .variable("i", baseInput())
+                .execute()
+                .path("createPackage.uuid").entity(String.class).get();
+    }
+
+    protected String createPlaceUuid(String token, String name, double lat, double lng) {
+        Map<String, Object> input = placeInput(name);
+        input.put("latitude", lat);
+        input.put("longitude", lng);
+        return as(token)
+                .document("mutation($i: PlaceInput!){ createPlace(input: $i){ uuid } }")
+                .variable("i", input)
+                .execute()
+                .path("createPlace.uuid").entity(String.class).get();
+    }
+
+    // ---------- REST (auth) ----------
 
     protected JsonNode register(String email) {
         return post("/auth/register", Map.of("name", "Test User", "email", email, "password", PASSWORD), null);
@@ -126,28 +169,41 @@ public abstract class IntegrationTestBase {
         return resp.getStatusCode().value();
     }
 
-    protected JsonNode propose(String token) {
-        JsonNode r = graphql(token, "mutation($i: PackageInput!){ proposePackage(input: $i){ uuid trackingCode status{code} } }",
-                Map.of("i", baseInput()));
-        assertThat(errors(r)).isFalse();
-        return r.get("data").get("proposePackage");
+    // ---------- aserciones de contrato ----------
+
+    protected void assertPackageShape(GraphQlTester.Response resp, String op, String statusCode) {
+        resp.path(op + ".uuid").entity(String.class).satisfies(u -> assertThat(u).isNotBlank());
+        resp.path(op + ".trackingCode").entity(String.class).satisfies(u -> assertThat(u).isNotBlank());
+        resp.path(op + ".status.code").entity(String.class).isEqualTo(statusCode);
+        resp.path(op + ".status.name").entity(String.class).satisfies(u -> assertThat(u).isNotBlank());
+        resp.path(op + ".origin.uuid").entity(String.class).satisfies(u -> assertThat(u).isNotBlank());
+        resp.path(op + ".destination.uuid").entity(String.class).satisfies(u -> assertThat(u).isNotBlank());
+        resp.path(op + ".history").entityList(Object.class).satisfies(list -> assertThat(list).hasSizeGreaterThan(0));
     }
 
-    protected JsonNode createPackage(String token) {
-        JsonNode r = graphql(token, "mutation($i: PackageInput!){ createPackage(input: $i){ uuid status{code} } }",
-                Map.of("i", baseInput()));
-        assertThat(errors(r)).isFalse();
-        return r.get("data").get("createPackage");
+    protected void assertTrackingShape(GraphQlTester.Response resp) {
+        resp.path("findPackageByTrackingCode.trackingCode").entity(String.class).satisfies(u -> assertThat(u).isNotBlank());
+        resp.path("findPackageByTrackingCode.status.code").entity(String.class).satisfies(u -> assertThat(u).isNotBlank());
+        resp.path("findPackageByTrackingCode.history").entityList(Object.class).satisfies(list -> assertThat(list).hasSizeGreaterThan(0));
     }
 
-    protected String createPlace(String token, String name, double lat, double lng) {
-        Map<String, Object> input = placeInput(name);
-        input.put("latitude", lat);
-        input.put("longitude", lng);
-        JsonNode r = graphql(token, "mutation($i: PlaceInput!){ createPlace(input: $i){ uuid } }", Map.of("i", input));
-        assertThat(errors(r)).isFalse();
-        return r.get("data").get("createPlace").get("uuid").asText();
+    protected void assertPlaceShape(GraphQlTester.Response resp, String op) {
+        resp.path(op + ".uuid").entity(String.class).satisfies(u -> assertThat(u).isNotBlank());
+        resp.path(op + ".name").entity(String.class).satisfies(u -> assertThat(u).isNotBlank());
+        resp.path(op + ".address").entity(String.class).satisfies(u -> assertThat(u).isNotBlank());
+        resp.path(op + ".city").entity(String.class).satisfies(u -> assertThat(u).isNotBlank());
+        resp.path(op + ".department").entity(String.class).satisfies(u -> assertThat(u).isNotBlank());
     }
+
+    protected void expectForbidden(GraphQlTester.Errors errors) {
+        errors.expect(err -> "Forbidden".equals(err.getMessage()));
+    }
+
+    protected void expectErrorCode(GraphQlTester.Errors errors, String code) {
+        errors.expect(err -> code.equals(err.getExtensions().get("code")));
+    }
+
+    // ---------- datos de prueba ----------
 
     protected Map<String, Object> baseInput() {
         Map<String, Object> m = new HashMap<>();

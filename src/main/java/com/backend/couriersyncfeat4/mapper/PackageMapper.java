@@ -9,6 +9,7 @@ import com.backend.couriersyncfeat4.entity.PackageEntity;
 import com.backend.couriersyncfeat4.entity.PackageStatusEntity;
 import com.backend.couriersyncfeat4.entity.PackageStatusHistoryEntity;
 import com.backend.couriersyncfeat4.entity.PlaceEntity;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -71,7 +72,7 @@ public class PackageMapper {
     }
 
     public List<PackageStatusHistoryResponse> toHistoryResponses(List<PackageStatusHistoryEntity> history) {
-        if (history == null) {
+        if (history == null || !Hibernate.isInitialized(history)) {
             return List.of();
         }
         return history.stream()
@@ -80,7 +81,7 @@ public class PackageMapper {
     }
 
     private List<PackageStatusHistoryResponse> toPublicHistoryResponses(List<PackageStatusHistoryEntity> history) {
-        if (history == null) {
+        if (history == null || !Hibernate.isInitialized(history)) {
             return List.of();
         }
         return history.stream()

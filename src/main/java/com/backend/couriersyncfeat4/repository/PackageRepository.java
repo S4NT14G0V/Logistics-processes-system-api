@@ -21,21 +21,23 @@ import java.util.UUID;
 public interface PackageRepository extends JpaRepository<PackageEntity, UUID> {
 
     @Override
-    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination", "statusHistory"})
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination",
+            "statusHistory", "statusHistory.fromStatus", "statusHistory.toStatus", "statusHistory.changedBy"})
     Optional<PackageEntity> findById(UUID id);
 
-    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination", "statusHistory"})
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination",
+            "statusHistory", "statusHistory.fromStatus", "statusHistory.toStatus", "statusHistory.changedBy"})
     Optional<PackageEntity> findByTrackingCode(String trackingCode);
 
     boolean existsByTrackingCode(String trackingCode);
 
-    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination", "statusHistory"})
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
     Page<PackageEntity> findByRegisteredAtBetween(LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination", "statusHistory"})
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
     Page<PackageEntity> findByRegisteredAtAfter(LocalDateTime startDate, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination", "statusHistory"})
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
     Page<PackageEntity> findByRegisteredAtBefore(LocalDateTime endDate, Pageable pageable);
 
     @Query("SELECT p.ownerUser.id AS userId, COUNT(p) AS packageCount " +
@@ -50,25 +52,25 @@ public interface PackageRepository extends JpaRepository<PackageEntity, UUID> {
             "FROM PackageEntity p GROUP BY p.status.code")
     List<StatusCountProjection> findCountByStatus();
 
-    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination", "statusHistory"})
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
     Page<PackageEntity> findByStatusIn(List<PackageStatusEntity> packageStatusEntities, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination", "statusHistory"})
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
     Page<PackageEntity> findAllByOwnerUser_Id(UUID userId, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination", "statusHistory"})
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
     Page<PackageEntity> findAllByDestination_Uuid(UUID destinationUuid, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination", "statusHistory"})
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
     Page<PackageEntity> findAllByOrigin_Uuid(UUID originUuid, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination", "statusHistory"})
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
     Page<PackageEntity> findAllByOrigin_UuidAndDestination_Uuid(UUID originUuid, UUID destinationUuid, Pageable pageable);
 
     @Override
-    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination", "statusHistory"})
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
     Page<PackageEntity> findAll(Pageable pageable);
 
-    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination", "statusHistory"})
+    @EntityGraph(attributePaths = {"ownerUser", "status", "origin", "destination"})
     Page<PackageEntity> findAllByOwnerUser_Email(String email, Pageable pageable);
 }

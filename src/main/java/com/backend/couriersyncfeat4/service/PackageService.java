@@ -31,6 +31,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -403,6 +404,13 @@ public class PackageService {
         history.setToStatus(to);
         history.setChangedBy(changedBy);
         statusHistoryRepository.save(history);
+
+        List<PackageStatusHistoryEntity> entries = new ArrayList<>();
+        if (packageEntity.getStatusHistory() != null) {
+            entries.addAll(packageEntity.getStatusHistory());
+        }
+        entries.add(history);
+        packageEntity.setStatusHistory(entries);
     }
 
     private Pageable toPageable(Integer page, Integer size) {

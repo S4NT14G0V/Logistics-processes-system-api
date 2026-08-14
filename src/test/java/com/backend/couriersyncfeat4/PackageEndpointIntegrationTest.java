@@ -1,7 +1,7 @@
 package com.backend.couriersyncfeat4;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
+import org.springframework.graphql.test.tester.GraphQlTester;
 
 import java.util.List;
 import java.util.Map;
@@ -13,145 +13,266 @@ class PackageEndpointIntegrationTest extends IntegrationTestBase {
     // ---------- Queries ----------
 
     @Test
+    @Operation("/graphql{findAllPackages}")
     void findAllPackages() {
         propose(custToken);
-        assertThat(errors(graphql(custToken, "query { findAllPackages { uuid } }", null))).isFalse();
-        assertThat(errors(graphql(adminToken, "query { findAllPackages { uuid } }", null))).isFalse();
+        as(custToken).document("query { findAllPackages { uuid } }").execute()
+                .path("findAllPackages").entityList(Object.class).satisfies(l -> assertThat(l).hasSizeGreaterThan(0));
+        as(adminToken).document("query { findAllPackages { uuid } }").execute()
+                .path("findAllPackages").entityList(Object.class).satisfies(l -> assertThat(l).hasSizeGreaterThan(0));
     }
 
     @Test
+    @Operation("/graphql{findPackageById}")
     void findPackageById() {
-        String own = propose(custToken).get("uuid").asText();
-        assertThat(errors(graphql(custToken, "query($id: ID!){ findPackageById(id: $id){ uuid } }", Map.of("id", own)))).isFalse();
+        String own = propose(custToken).uuid();
+        GraphQlTester.Response r = as(custToken)
+                .document("query($id: ID!){ findPackageById(id: $id)" + PACKAGE_FIELDS + " }")
+                .variable("id", own).execute();
+        assertPackageShape(r, "findPackageById", "PROPOSED");
 
-        String others = createPackage(adminToken).get("uuid").asText();
-        assertThat(errors(graphql(custToken, "query($id: ID!){ findPackageById(id: $id){ uuid } }", Map.of("id", others)))).isTrue();
+        String others = createPackageUuid(adminToken);
+        expectForbidden(as(custToken).document("query($id: ID!){ findPackageById(id: $id){ uuid } }")
+                .variable("id", others).execute().errors());
     }
 
     @Test
+    @Operation("/graphql{findPackageByTrackingCode}")
     void findPackageByTrackingCode() {
-        String tracking = propose(custToken).get("trackingCode").asText();
-        JsonNode r = graphql(null, "query($t: String!){ findPackageByTrackingCode(trackingCode: $t){ trackingCode status{code} } }", Map.of("t", tracking));
-        assertThat(errors(r)).isFalse();
-        assertThat(r.get("data").get("findPackageByTrackingCode").get("trackingCode").asText()).isEqualTo(tracking);
+        String tracking = propose(custToken).trackingCode();
+        GraphQlTester.Response r = as(null)
+                .document("query($t: String!){ findPackageByTrackingCode(trackingCode: $t)" + TRACKING_FIELDS + " }")
+                .variable("t", tracking).execute();
+        assertTrackingShape(r);
+
+        // contrato limitado: uuid no existe en PackageTrackingResponse
+        as(null).document("query($t: String!){ findPackageByTrackingCode(trackingCode: $t){ uuid } }")
+                .variable("t", tracking).execute()
+                .errors().satisfy(errors -> assertThat(errors).isNotEmpty());
     }
 
     @Test
+    @Operation("/graphql{findPackageHistory}")
     void findPackageHistory() {
-        String uuid = propose(custToken).get("uuid").asText();
-        assertThat(errors(graphql(custToken, "query($id: ID!){ findPackageHistory(packageId: $id){ changedAt toStatus{code} } }", Map.of("id", uuid)))).isFalse();
+        String uuid = propose(custToken).uuid();
+        GraphQlTester.Response r = as(custToken)
+                .document("query($id: ID!){ findPackageHistory(packageId: $id){ changedAt fromStatus{ code } toStatus{ code } } }")
+                .variable("id", uuid).execute();
+        r.path("findPackageHistory").entityList(Object.class).satisfies(l -> assertThat(l).hasSizeGreaterThan(0));
+        r.path("findPackageHistory[0].toStatus.code").entity(String.class).isEqualTo("PROPOSED");
     }
 
     @Test
+    @Operation("/graphql{findPackagesByDateRange}")
     void findPackagesByDateRange() {
         propose(custToken);
-        assertThat(errors(graphql(custToken, "query { findPackagesByDateRange(startDate: \"2000-01-01T00:00:00\", endDate: \"2100-01-01T00:00:00\") { uuid } }", null))).isFalse();
+        as(custToken)
+                .document("query { findPackagesByDateRange(startDate: \"2000-01-01T00:00:00\", endDate: \"2100-01-01T00:00:00\") { uuid } }")
+                .execute()
+                .path("findPackagesByDateRange").entityList(Object.class).satisfies(l -> assertThat(l).hasSizeGreaterThan(0));
     }
 
     @Test
+    @Operation("/graphql{findPackageCountByUserId}")
     void findPackageCountByUserId() {
-        assertThat(errors(graphql(custToken, "query($uid: ID!){ findPackageCountByUserId(userId: $uid){ packageCount } }", Map.of("uid", custId)))).isFalse();
-        assertThat(errors(graphql(custToken, "query($uid: ID!){ findPackageCountByUserId(userId: $uid){ packageCount } }", Map.of("uid", adminId)))).isTrue();
+        as(custToken).document("query($uid: ID!){ findPackageCountByUserId(userId: $uid){ packageCount } }")
+                .variable("uid", custId).execute()
+                .path("findPackageCountByUserId.packageCount").entity(Integer.class).satisfies(v -> assertThat(v).isNotNull());
+
+        expectForbidden(as(custToken).document("query($uid: ID!){ findPackageCountByUserId(userId: $uid){ packageCount } }")
+                .variable("uid", adminId).execute().errors());
     }
 
     @Test
+    @Operation("/graphql{findPackagesByStatusIn}")
     void findPackagesByStatusIn() {
         propose(custToken);
-        assertThat(errors(graphql(custToken, "query($s: [String!]){ findPackagesByStatusIn(packageStatuses: $s){ uuid } }", Map.of("s", List.of("PROPOSED"))))).isFalse();
-        assertThat(errors(graphql(custToken, "query { findPackagesByStatusIn(packageStatuses: null){ uuid } }", null))).isFalse();
+        as(custToken).document("query($s: [String!]){ findPackagesByStatusIn(packageStatuses: $s){ uuid } }")
+                .variable("s", List.of("PROPOSED")).execute()
+                .path("findPackagesByStatusIn").entityList(Object.class).satisfies(l -> assertThat(l).hasSizeGreaterThan(0));
+
+        as(custToken).document("query { findPackagesByStatusIn(packageStatuses: null){ uuid } }").execute()
+                .path("findPackagesByStatusIn").entityList(Object.class).satisfies(l -> assertThat(l).hasSizeGreaterThan(0));
     }
 
     @Test
+    @Operation("/graphql{findPackageCountByAllUsers}")
     void findPackageCountByAllUsers() {
-        assertThat(errors(graphql(adminToken, "query { findPackageCountByAllUsers { totalPackages users { userId packageCount } } }", null))).isFalse();
-        assertThat(errors(graphql(custToken, "query { findPackageCountByAllUsers { totalPackages } }", null))).isTrue();
+        GraphQlTester.Response r = as(adminToken)
+                .document("query { findPackageCountByAllUsers { totalPackages users { userId packageCount } } }").execute();
+        r.path("findPackageCountByAllUsers.totalPackages").entity(Integer.class).satisfies(v -> assertThat(v).isNotNull());
+        r.path("findPackageCountByAllUsers.users").entityList(Object.class).satisfies(l -> assertThat(l).isNotNull());
+
+        expectForbidden(as(custToken).document("query { findPackageCountByAllUsers { totalPackages } }").execute().errors());
     }
 
     @Test
+    @Operation("/graphql{findPackageCountByAllStatus}")
     void findPackageCountByAllStatus() {
-        assertThat(errors(graphql(adminToken, "query { findPackageCountByAllStatus { statusCode count } }", null))).isFalse();
-        assertThat(errors(graphql(custToken, "query { findPackageCountByAllStatus { statusCode } }", null))).isTrue();
+        as(adminToken).document("query { findPackageCountByAllStatus { statusCode count } }").execute()
+                .path("findPackageCountByAllStatus").entityList(Object.class).satisfies(l -> assertThat(l).isNotNull());
+
+        expectForbidden(as(custToken).document("query { findPackageCountByAllStatus { statusCode } }").execute().errors());
     }
 
     @Test
+    @Operation("/graphql{findAllPackagesByUserId}")
     void findAllPackagesByUserId() {
-        assertThat(errors(graphql(custToken, "query($uid: ID!){ findAllPackagesByUserId(userId: $uid){ uuid } }", Map.of("uid", custId)))).isFalse();
-        assertThat(errors(graphql(custToken, "query($uid: ID!){ findAllPackagesByUserId(userId: $uid){ uuid } }", Map.of("uid", adminId)))).isTrue();
+        as(custToken).document("query($uid: ID!){ findAllPackagesByUserId(userId: $uid){ uuid } }")
+                .variable("uid", custId).execute()
+                .path("findAllPackagesByUserId").entityList(Object.class).satisfies(l -> assertThat(l).isNotNull());
+
+        expectForbidden(as(custToken).document("query($uid: ID!){ findAllPackagesByUserId(userId: $uid){ uuid } }")
+                .variable("uid", adminId).execute().errors());
     }
 
     @Test
+    @Operation("/graphql{findAllPackagesByPlace}")
     void findAllPackagesByPlace() {
         propose(custToken);
-        assertThat(errors(graphql(custToken, "query($o: ID, $d: ID){ findAllPackagesByPlace(origin: $o, destination: $d){ uuid } }", Map.of("o", originId, "d", destId)))).isFalse();
+        as(custToken).document("query($o: ID, $d: ID){ findAllPackagesByPlace(origin: $o, destination: $d){ uuid } }")
+                .variable("o", originId).variable("d", destId).execute()
+                .path("findAllPackagesByPlace").entityList(Object.class).satisfies(l -> assertThat(l).hasSizeGreaterThan(0));
     }
 
     // ---------- Mutations ----------
 
     @Test
+    @Operation("/graphql{createPackage}")
     void createPackage() {
-        assertThat(errors(graphql(adminToken, "mutation($i: PackageInput!){ createPackage(input: $i){ uuid } }", Map.of("i", baseInput())))).isFalse();
-        assertThat(errors(graphql(custToken, "mutation($i: PackageInput!){ createPackage(input: $i){ uuid } }", Map.of("i", baseInput())))).isTrue();
+        GraphQlTester.Response ok = as(adminToken)
+                .document("mutation($i: PackageInput!){ createPackage(input: $i)" + PACKAGE_FIELDS + " }")
+                .variable("i", baseInput()).execute();
+        assertPackageShape(ok, "createPackage", "CREATED");
+
+        expectForbidden(as(custToken).document("mutation($i: PackageInput!){ createPackage(input: $i){ uuid } }")
+                .variable("i", baseInput()).execute().errors());
+
+        // validación: peso negativo
+        Map<String, Object> bad = baseInput();
+        bad.put("weightKg", -5.0);
+        as(adminToken).document("mutation($i: PackageInput!){ createPackage(input: $i){ uuid } }")
+                .variable("i", bad).execute()
+                .errors().satisfy(errors -> assertThat(errors).isNotEmpty());
     }
 
     @Test
+    @Operation("/graphql{proposePackage}")
     void proposePackage() {
-        assertThat(errors(graphql(custToken, "mutation($i: PackageInput!){ proposePackage(input: $i){ uuid } }", Map.of("i", baseInput())))).isFalse();
-        assertThat(errors(graphql(adminToken, "mutation($i: PackageInput!){ proposePackage(input: $i){ uuid } }", Map.of("i", baseInput())))).isTrue();
+        GraphQlTester.Response ok = as(custToken)
+                .document("mutation($i: PackageInput!){ proposePackage(input: $i)" + PACKAGE_FIELDS + " }")
+                .variable("i", baseInput()).execute();
+        assertPackageShape(ok, "proposePackage", "PROPOSED");
+
+        expectForbidden(as(adminToken).document("mutation($i: PackageInput!){ proposePackage(input: $i){ uuid } }")
+                .variable("i", baseInput()).execute().errors());
+
+        // validación: dimensión inválida
+        Map<String, Object> bad = baseInput();
+        bad.put("lengthCm", 0);
+        as(custToken).document("mutation($i: PackageInput!){ proposePackage(input: $i){ uuid } }")
+                .variable("i", bad).execute()
+                .errors().satisfy(errors -> assertThat(errors).isNotEmpty());
     }
 
     @Test
+    @Operation("/graphql{approvePackage}")
     void approvePackage() {
-        String uuid = propose(custToken).get("uuid").asText();
-        JsonNode r = graphql(adminToken, "mutation($id: ID!){ approvePackage(id: $id){ status{code} } }", Map.of("id", uuid));
-        assertThat(r.get("data").get("approvePackage").get("status").get("code").asText()).isEqualTo("CREATED");
+        String uuid = propose(custToken).uuid();
+        GraphQlTester.Response r = as(adminToken)
+                .document("mutation($id: ID!){ approvePackage(id: $id)" + PACKAGE_FIELDS + " }")
+                .variable("id", uuid).execute();
+        assertPackageShape(r, "approvePackage", "CREATED");
     }
 
     @Test
+    @Operation("/graphql{rejectPackage}")
     void rejectPackage() {
-        String uuid = propose(custToken).get("uuid").asText();
-        JsonNode r = graphql(adminToken, "mutation($id: ID!, $r: String){ rejectPackage(id: $id, reason: $r){ status{code} } }", Map.of("id", uuid, "r", "no"));
-        assertThat(r.get("data").get("rejectPackage").get("status").get("code").asText()).isEqualTo("CANCELLED");
+        String uuid = propose(custToken).uuid();
+        GraphQlTester.Response r = as(adminToken)
+                .document("mutation($id: ID!, $r: String){ rejectPackage(id: $id, reason: $r)" + PACKAGE_FIELDS + " }")
+                .variable("id", uuid).variable("r", "no").execute();
+        assertPackageShape(r, "rejectPackage", "CANCELLED");
     }
 
     @Test
+    @Operation("/graphql{reactivatePackage}")
     void reactivatePackage() {
-        String uuid = propose(custToken).get("uuid").asText();
-        graphql(adminToken, "mutation($id: ID!, $r: String){ rejectPackage(id: $id, reason: $r){ status{code} } }", Map.of("id", uuid, "r", "no"));
-        JsonNode r = graphql(adminToken, "mutation($id: ID!){ reactivatePackage(id: $id){ status{code} } }", Map.of("id", uuid));
-        assertThat(r.get("data").get("reactivatePackage").get("status").get("code").asText()).isEqualTo("CREATED");
+        String uuid = propose(custToken).uuid();
+        as(adminToken).document("mutation($id: ID!, $r: String){ rejectPackage(id: $id, reason: $r){ uuid } }")
+                .variable("id", uuid).variable("r", "no").execute();
+        GraphQlTester.Response r = as(adminToken)
+                .document("mutation($id: ID!){ reactivatePackage(id: $id)" + PACKAGE_FIELDS + " }")
+                .variable("id", uuid).execute();
+        assertPackageShape(r, "reactivatePackage", "CREATED");
     }
 
     @Test
+    @Operation("/graphql{updatePackage}")
     void updatePackage() {
         // customer en PROPOSED -> error de negocio
-        String proposed = propose(custToken).get("uuid").asText();
-        assertThat(errors(graphql(custToken, "mutation($id: ID!, $i: PackageUpdateInput!){ updatePackage(id: $id, input: $i){ uuid } }", Map.of("id", proposed, "i", Map.of("description", "x"))))).isTrue();
+        String proposed = propose(custToken).uuid();
+        expectErrorCode(as(custToken).document("mutation($id: ID!, $i: PackageUpdateInput!){ updatePackage(id: $id, input: $i){ uuid } }")
+                .variable("id", proposed).variable("i", Map.of("description", "x")).execute().errors(), "PACKAGE_NOT_UPDATABLE");
 
         // customer sobre paquete ajeno -> Forbidden
-        String others = createPackage(adminToken).get("uuid").asText();
-        assertThat(errors(graphql(custToken, "mutation($id: ID!, $i: PackageUpdateInput!){ updatePackage(id: $id, input: $i){ uuid } }", Map.of("id", others, "i", Map.of("description", "x"))))).isTrue();
+        String others = createPackageUuid(adminToken);
+        expectForbidden(as(custToken).document("mutation($id: ID!, $i: PackageUpdateInput!){ updatePackage(id: $id, input: $i){ uuid } }")
+                .variable("id", others).variable("i", Map.of("description", "x")).execute().errors());
 
         // admin en CREATED -> ok
-        assertThat(errors(graphql(adminToken, "mutation($id: ID!, $i: PackageUpdateInput!){ updatePackage(id: $id, input: $i){ uuid } }", Map.of("id", others, "i", Map.of("description", "editado"))))).isFalse();
+        GraphQlTester.Response ok = as(adminToken)
+                .document("mutation($id: ID!, $i: PackageUpdateInput!){ updatePackage(id: $id, input: $i)" + PACKAGE_FIELDS + " }")
+                .variable("id", others).variable("i", Map.of("description", "editado")).execute();
+        assertPackageShape(ok, "updatePackage", "CREATED");
     }
 
     @Test
+    @Operation("/graphql{cancelPackage}")
     void cancelPackage() {
-        String uuid = createPackage(adminToken).get("uuid").asText();
-        JsonNode r = graphql(adminToken, "mutation($id: ID!, $r: String){ cancelPackage(id: $id, reason: $r){ status{code} } }", Map.of("id", uuid, "r", "x"));
-        assertThat(r.get("data").get("cancelPackage").get("status").get("code").asText()).isEqualTo("CANCELLED");
+        String uuid = createPackageUuid(adminToken);
+        GraphQlTester.Response ok = as(adminToken)
+                .document("mutation($id: ID!, $r: String){ cancelPackage(id: $id, reason: $r)" + PACKAGE_FIELDS + " }")
+                .variable("id", uuid).variable("r", "x").execute();
+        assertPackageShape(ok, "cancelPackage", "CANCELLED");
 
-        String delivered = createPackage(adminToken).get("uuid").asText();
-        graphql(adminToken, "mutation($id: ID!, $c: String!){ changePackageStatus(id: $id, statusCode: $c){ status{code} } }", Map.of("id", delivered, "c", "IN_TRANSIT"));
-        graphql(adminToken, "mutation($id: ID!, $c: String!){ changePackageStatus(id: $id, statusCode: $c){ status{code} } }", Map.of("id", delivered, "c", "DELIVERED"));
-        assertThat(errors(graphql(adminToken, "mutation($id: ID!, $r: String){ cancelPackage(id: $id, reason: $r){ uuid } }", Map.of("id", delivered, "r", "x")))).isTrue();
+        String delivered = createPackageUuid(adminToken);
+        as(adminToken).document("mutation($id: ID!, $c: String!){ changePackageStatus(id: $id, statusCode: $c){ uuid } }")
+                .variable("id", delivered).variable("c", "IN_TRANSIT").execute();
+        as(adminToken).document("mutation($id: ID!, $c: String!){ changePackageStatus(id: $id, statusCode: $c){ uuid } }")
+                .variable("id", delivered).variable("c", "DELIVERED").execute();
+        expectErrorCode(as(adminToken).document("mutation($id: ID!, $r: String){ cancelPackage(id: $id, reason: $r){ uuid } }")
+                .variable("id", delivered).variable("r", "x").execute().errors(), "PACKAGE_NOT_CANCELLABLE");
     }
 
     @Test
+    @Operation("/graphql{changePackageStatus}")
     void changePackageStatus() {
-        String uuid = createPackage(adminToken).get("uuid").asText();
-        JsonNode r = graphql(adminToken, "mutation($id: ID!, $c: String!){ changePackageStatus(id: $id, statusCode: $c){ status{code} } }", Map.of("id", uuid, "c", "IN_TRANSIT"));
-        assertThat(r.get("data").get("changePackageStatus").get("status").get("code").asText()).isEqualTo("IN_TRANSIT");
-        assertThat(errors(graphql(custToken, "mutation($id: ID!, $c: String!){ changePackageStatus(id: $id, statusCode: $c){ uuid } }", Map.of("id", uuid, "c", "IN_TRANSIT")))).isTrue();
+        String uuid = createPackageUuid(adminToken);
+        GraphQlTester.Response r = as(adminToken)
+                .document("mutation($id: ID!, $c: String!){ changePackageStatus(id: $id, statusCode: $c)" + PACKAGE_FIELDS + " }")
+                .variable("id", uuid).variable("c", "IN_TRANSIT").execute();
+        assertPackageShape(r, "changePackageStatus", "IN_TRANSIT");
+
+        expectForbidden(as(custToken).document("mutation($id: ID!, $c: String!){ changePackageStatus(id: $id, statusCode: $c){ uuid } }")
+                .variable("id", uuid).variable("c", "IN_TRANSIT").execute().errors());
+    }
+
+    @Test
+    @Operation("/graphql{fullLifecycle}")
+    void fullLifecycle() {
+        String uuid = propose(custToken).uuid();
+
+        as(adminToken).document("mutation($id: ID!){ approvePackage(id: $id){ status{ code } } }")
+                .variable("id", uuid).execute()
+                .path("approvePackage.status.code").entity(String.class).isEqualTo("CREATED");
+
+        as(adminToken).document("mutation($id: ID!, $c: String!){ changePackageStatus(id: $id, statusCode: $c){ status{ code } } }")
+                .variable("id", uuid).variable("c", "IN_TRANSIT").execute()
+                .path("changePackageStatus.status.code").entity(String.class).isEqualTo("IN_TRANSIT");
+
+        as(adminToken).document("mutation($id: ID!, $c: String!){ changePackageStatus(id: $id, statusCode: $c){ status{ code } } }")
+                .variable("id", uuid).variable("c", "DELIVERED").execute()
+                .path("changePackageStatus.status.code").entity(String.class).isEqualTo("DELIVERED");
     }
 }

@@ -11,27 +11,31 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AuthEndpointIntegrationTest extends IntegrationTestBase {
 
     @Test
+    @Operation("/auth/register")
     void register() {
         JsonNode r = register("reg-" + UUID.randomUUID() + "@test.com");
-        assertThat(r.hasNonNull("accessToken")).isTrue();
-        assertThat(r.hasNonNull("refreshToken")).isTrue();
+        assertThat(r.get("accessToken").asText()).isNotBlank();
+        assertThat(r.get("refreshToken").asText()).isNotBlank();
     }
 
     @Test
+    @Operation("/auth/login")
     void login() {
         JsonNode r = login(ADMIN_EMAIL);
-        assertThat(r.hasNonNull("accessToken")).isTrue();
-        assertThat(r.hasNonNull("refreshToken")).isTrue();
+        assertThat(r.get("accessToken").asText()).isNotBlank();
+        assertThat(r.get("refreshToken").asText()).isNotBlank();
     }
 
     @Test
+    @Operation("/auth/refresh")
     void refresh() {
         String refresh = login(ADMIN_EMAIL).get("refreshToken").asText();
         JsonNode r = post("/auth/refresh", Map.of("refreshToken", refresh), null);
-        assertThat(r.hasNonNull("accessToken")).isTrue();
+        assertThat(r.get("accessToken").asText()).isNotBlank();
     }
 
     @Test
+    @Operation("/auth/logout")
     void logout() {
         String refresh = login(ADMIN_EMAIL).get("refreshToken").asText();
         assertThat(postStatus("/auth/logout", Map.of("refreshToken", refresh))).isEqualTo(204);

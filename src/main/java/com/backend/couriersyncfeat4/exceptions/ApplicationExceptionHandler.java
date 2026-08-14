@@ -4,6 +4,7 @@ import com.backend.couriersyncfeat4.dto.output.ApiErrorResponse;
 import graphql.GraphQLError;
 import graphql.GraphqlErrorBuilder;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -76,6 +77,21 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
                 .extensions(Map.of(
                         "code", ErrorCodes.FORBIDDEN.getCode(),
                         "status", ErrorCodes.FORBIDDEN.getStatusCode()))
+                .build();
+    }
+
+    @GraphQlExceptionHandler
+    public GraphQLError handleConstraintViolationException(final ConstraintViolationException exception) {
+        String message = exception.getConstraintViolations().stream()
+                .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                .collect(Collectors.joining("; "));
+        log.warn("GraphQL validation error: {}", message);
+        return GraphqlErrorBuilder.newError()
+                .message(message)
+                .errorType(ErrorType.BAD_REQUEST)
+                .extensions(Map.of(
+                        "code", ErrorCodes.INVALID_INPUT.getCode(),
+                        "status", ErrorCodes.INVALID_INPUT.getStatusCode()))
                 .build();
     }
 

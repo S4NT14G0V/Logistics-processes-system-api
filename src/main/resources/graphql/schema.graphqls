@@ -1,59 +1,9 @@
-#TODO: Definir si devolver el Package, LocationEntity y User completo, o optar por DTOS
-#TODO: Validar si es necesario el [!]
-type Query { #34
-    findAllUsers: [User!]!
-    findUserById(id: ID): User!
-    currentUserRole: String!
-
-    findAllRoles: [Role!]!
-    findRoleById(id: ID): Role!
-
-    findAllPackagesByUserId(userId: ID): [Package!]!
-    findAllPackagesByUbication(origin: String, destination: String): [Package!]!
-    findAllPackages: [Package!]!
-    findPackageByTrackingCode(trackingCode: String): Package!
-    findPackagesByDateRange(startDate: String, endDate: String): [Package!]!
-    findPackageCountByUserId(userId: ID): PackageCount!
-    findPackagesByStatusIn(packageStatuses: [Int!]): [Package!]!
-    findPackageCountByAllUsers: [PackageCount]!
-
-    findAllPackagesStatus: [PackageStatus!]!
-    findPackageStatusById(id: ID!): PackageStatus!
-
-    findAllLocationsByUserId(userId: ID): [Location!]!
-    findAllLocations: [Location!]!
-    findLocationById(id: ID): Location!
-    findAllLocationsByPackageId(packageId: ID): [Location!]!
-    findLastLocationByPackageId(packageId: ID): Location!
-
-    findAllAlerts: [Alert!]!
-    findAllAlertsByUserId(id: ID): [Alert!]!
-
-    findAllAlertTypes: [AlertType!]!
-    findAlertTypeById(id: ID): AlertType!
-
-    inventorySummary(periodStart: String, periodEnd: String, region: String): [InventorySummary!]!
+type Query {
+    _dummy: String
 }
 
-type Mutation{
-    addUser(user: UserInput!): User!
-    deleteUser(id: ID!): CustomResponse!
-
-    addPackage(packageEntity: InputPackageAdd!): Package!
-    updatePackage(packageEntity: InputPackageUpdate!): CustomResponse!
-    deletePackageById(id: ID!): CustomResponse!
-
-    addLocation(location: InputLocationAdd!): Location!
-    updateLocation(location: InputLocationUpdate!): CustomResponse!
-    deleteLocationById(id: ID!): CustomResponse!
-
-    sendMessageToUser(userId: ID!, message: String!): Boolean!
-    sendAlertToUser(userId: ID!, packageId: ID!, alertTypeId: ID!, description: String!): Boolean!
-}
-
-type Subscription {
-    subscribeToUserMessages(userId: ID!): String!
-    subscribeToUserAlerts(userId: ID!): Alert!
+type Mutation {
+    _dummy: String
 }
 
 

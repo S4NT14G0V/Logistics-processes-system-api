@@ -1,8 +1,8 @@
 package com.backend.couriersyncfeat4;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.graphql.test.tester.GraphQlTester;
 
-import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -10,29 +10,53 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PlaceEndpointIntegrationTest extends IntegrationTestBase {
 
     @Test
+    @Operation("/graphql{findAllPlaces}")
     void findAllPlaces() {
-        assertThat(errors(graphql(custToken, "query { findAllPlaces { uuid } }", null))).isFalse();
+        as(custToken).document("query { findAllPlaces" + PLACE_FIELDS + " }").execute()
+                .path("findAllPlaces").entityList(Object.class).satisfies(l -> assertThat(l).hasSizeGreaterThan(0));
     }
 
     @Test
+    @Operation("/graphql{findPlaceByUuid}")
     void findPlaceByUuid() {
-        assertThat(errors(graphql(custToken, "query($u: ID!){ findPlaceByUuid(uuid: $u){ uuid } }", Map.of("u", originId)))).isFalse();
+        GraphQlTester.Response r = as(custToken)
+                .document("query($u: ID!){ findPlaceByUuid(uuid: $u)" + PLACE_FIELDS + " }")
+                .variable("u", originId).execute();
+        assertPlaceShape(r, "findPlaceByUuid");
     }
 
     @Test
+    @Operation("/graphql{createPlace}")
     void createPlace() {
-        assertThat(errors(graphql(adminToken, "mutation($i: PlaceInput!){ createPlace(input: $i){ uuid } }", Map.of("i", placeInput("X"))))).isFalse();
-        assertThat(errors(graphql(custToken, "mutation($i: PlaceInput!){ createPlace(input: $i){ uuid } }", Map.of("i", placeInput("Y"))))).isTrue();
+        GraphQlTester.Response ok = as(adminToken)
+                .document("mutation($i: PlaceInput!){ createPlace(input: $i)" + PLACE_FIELDS + " }")
+                .variable("i", placeInput("X")).execute();
+        assertPlaceShape(ok, "createPlace");
+
+        expectForbidden(as(custToken).document("mutation($i: PlaceInput!){ createPlace(input: $i){ uuid } }")
+                .variable("i", placeInput("Y")).execute().errors());
+
+        // validación: name vacío
+        as(adminToken).document("mutation($i: PlaceInput!){ createPlace(input: $i){ uuid } }")
+                .variable("i", placeInput("")).execute()
+                .errors().satisfy(errors -> assertThat(errors).isNotEmpty());
     }
 
     @Test
+    @Operation("/graphql{updatePlace}")
     void updatePlace() {
-        assertThat(errors(graphql(adminToken, "mutation($u: ID!, $i: PlaceInput!){ updatePlace(uuid: $u, input: $i){ uuid } }", Map.of("u", originId, "i", placeInput("Actualizado"))))).isFalse();
+        GraphQlTester.Response r = as(adminToken)
+                .document("mutation($u: ID!, $i: PlaceInput!){ updatePlace(uuid: $u, input: $i)" + PLACE_FIELDS + " }")
+                .variable("u", originId).variable("i", placeInput("Actualizado")).execute();
+        assertPlaceShape(r, "updatePlace");
     }
 
     @Test
+    @Operation("/graphql{deletePlace}")
     void deletePlace() {
-        String p = createPlace(adminToken, "Del " + UUID.randomUUID(), 1.0, 1.0);
-        assertThat(errors(graphql(adminToken, "mutation($u: ID!){ deletePlace(uuid: $u) }", Map.of("u", p)))).isFalse();
+        String p = createPlaceUuid(adminToken, "Del " + UUID.randomUUID(), 1.0, 1.0);
+        as(adminToken).document("mutation($u: ID!){ deletePlace(uuid: $u) }")
+                .variable("u", p).execute()
+                .path("deletePlace").entity(Boolean.class).isEqualTo(true);
     }
 }

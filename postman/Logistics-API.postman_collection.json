@@ -236,6 +236,26 @@
           }
         },
         {
+          "name": "findPackageHistory",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query($packageId: ID!){ findPackageHistory(packageId: $packageId){ changedAt fromStatus{code name} toStatus{code name} changedBy } }\",\"variables\":{\"packageId\":\"{{packageUuid}}\"}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
           "name": "findPackageByTrackingCode",
           "request": {
             "method": "POST",
@@ -416,7 +436,7 @@
           }
         },
         {
-          "name": "deletePackageById (cancel)",
+          "name": "cancelPackage",
           "request": {
             "method": "POST",
             "header": [
@@ -425,7 +445,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"query\":\"mutation($id: ID!, $reason: String){ deletePackageById(id: $id, reason: $reason){ uuid trackingCode status{code name} cancellationReason } }\",\"variables\":{\"id\":\"{{packageUuid}}\",\"reason\":\"Paquete cancelado por el cliente\"}}",
+              "raw": "{\"query\":\"mutation($id: ID!, $reason: String){ cancelPackage(id: $id, reason: $reason){ uuid trackingCode status{code name} cancellationReason } }\",\"variables\":{\"id\":\"{{packageUuid}}\",\"reason\":\"Paquete cancelado por el cliente\"}}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {

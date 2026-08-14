@@ -9,6 +9,7 @@ import com.backend.couriersyncfeat4.dto.output.PackageStatusHistoryResponse;
 import com.backend.couriersyncfeat4.dto.output.PackageTrackingResponse;
 import com.backend.couriersyncfeat4.dto.output.StatusCount;
 import com.backend.couriersyncfeat4.service.PackageService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -32,13 +33,13 @@ public class PackageController {
 
     @PreAuthorize("hasAuthority('package:create:all')")
     @MutationMapping
-    public PackageResponse createPackage(@Argument("input") PackageInput input) {
+    public PackageResponse createPackage(@Argument("input") @Valid PackageInput input) {
         return packageService.createPackage(input);
     }
 
     @PreAuthorize("hasAuthority('package:create:own')")
     @MutationMapping
-    public PackageResponse proposePackage(@Argument("input") PackageInput input) {
+    public PackageResponse proposePackage(@Argument("input") @Valid PackageInput input) {
         return packageService.proposePackage(input);
     }
 
@@ -85,7 +86,7 @@ public class PackageController {
 
     @PreAuthorize("hasAnyAuthority('package:update:all','package:update:own')")
     @MutationMapping
-    public PackageResponse updatePackage(@Argument UUID id, @Argument("input") PackageUpdateInput input) {
+    public PackageResponse updatePackage(@Argument UUID id, @Argument("input") @Valid PackageUpdateInput input) {
         return packageService.updatePackage(id, input);
     }
 
