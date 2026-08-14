@@ -5,6 +5,7 @@ import com.backend.couriersyncfeat4.dto.input.PackageUpdateInput;
 import com.backend.couriersyncfeat4.dto.output.PackageCountResponse;
 import com.backend.couriersyncfeat4.dto.output.PackageResponse;
 import com.backend.couriersyncfeat4.dto.output.PackageStatsResponse;
+import com.backend.couriersyncfeat4.dto.output.PackageStatusHistoryResponse;
 import com.backend.couriersyncfeat4.dto.output.PackageTrackingResponse;
 import com.backend.couriersyncfeat4.dto.output.StatusCount;
 import com.backend.couriersyncfeat4.service.PackageService;
@@ -71,6 +72,12 @@ public class PackageController {
         return packageService.findPackageById(id);
     }
 
+    @PreAuthorize("hasAnyAuthority('package:read:all','package:read:own')")
+    @QueryMapping
+    public List<PackageStatusHistoryResponse> findPackageHistory(@Argument UUID packageId) {
+        return packageService.findPackageHistory(packageId);
+    }
+
     @QueryMapping
     public PackageTrackingResponse findPackageByTrackingCode(@Argument String trackingCode) {
         return packageService.findPackageByTrackingCode(trackingCode);
@@ -84,8 +91,8 @@ public class PackageController {
 
     @PreAuthorize("hasAnyAuthority('package:cancel:all','package:cancel:own')")
     @MutationMapping
-    public PackageResponse deletePackageById(@Argument UUID id, @Argument String reason) {
-        return packageService.deletePackageById(id, reason);
+    public PackageResponse cancelPackage(@Argument UUID id, @Argument String reason) {
+        return packageService.cancelPackage(id, reason);
     }
 
     @PreAuthorize("hasAuthority('package:update:all')")

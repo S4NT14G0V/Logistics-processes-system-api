@@ -70,7 +70,7 @@ public class PackageMapper {
                 toPublicHistoryResponses(entity.getStatusHistory()));
     }
 
-    private List<PackageStatusHistoryResponse> toHistoryResponses(List<PackageStatusHistoryEntity> history) {
+    public List<PackageStatusHistoryResponse> toHistoryResponses(List<PackageStatusHistoryEntity> history) {
         if (history == null) {
             return List.of();
         }

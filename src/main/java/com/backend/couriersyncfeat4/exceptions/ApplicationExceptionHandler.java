@@ -68,10 +68,14 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
 
     @GraphQlExceptionHandler
     public GraphQLError handleAccessDeniedException(final AccessDeniedException exception) {
-        log.warn("Forbidden: {}", exception.getMessage());
+        log.error("GraphQL error code={}; message: {}", ErrorCodes.FORBIDDEN.getCode(),
+                ErrorCodes.FORBIDDEN.getMessage());
         return GraphqlErrorBuilder.newError()
-                .message("Forbidden")
+                .message(ErrorCodes.FORBIDDEN.getMessage())
                 .errorType(ErrorType.FORBIDDEN)
+                .extensions(Map.of(
+                        "code", ErrorCodes.FORBIDDEN.getCode(),
+                        "status", ErrorCodes.FORBIDDEN.getStatusCode()))
                 .build();
     }
 

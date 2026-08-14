@@ -7,6 +7,7 @@ import com.backend.couriersyncfeat4.dto.output.PackageCountProjection;
 import com.backend.couriersyncfeat4.dto.output.PackageCountResponse;
 import com.backend.couriersyncfeat4.dto.output.PackageResponse;
 import com.backend.couriersyncfeat4.dto.output.PackageStatsResponse;
+import com.backend.couriersyncfeat4.dto.output.PackageStatusHistoryResponse;
 import com.backend.couriersyncfeat4.dto.output.PackageTrackingResponse;
 import com.backend.couriersyncfeat4.dto.output.StatusCount;
 import com.backend.couriersyncfeat4.dto.output.UserPackageCount;
@@ -169,6 +170,13 @@ public class PackageService {
                 .orElseThrow(() -> new ApplicationException(ErrorCodes.PACKAGE_NOT_FOUND, "Package not found"));
     }
 
+    public List<PackageStatusHistoryResponse> findPackageHistory(UUID packageId) {
+        PackageEntity packageEntity = getPackageById(packageId);
+        assertOwnerOrPermission(packageEntity, Permission.PACKAGE_READ_ALL);
+        return packageMapper.toHistoryResponses(
+                statusHistoryRepository.findAllByPackageEntity_UuidOrderByChangedAtAsc(packageId));
+    }
+
     public PackageTrackingResponse findPackageByTrackingCode(String trackingCode) {
         if (trackingCode == null || trackingCode.trim().isEmpty()) {
             throw new ApplicationException(ErrorCodes.INVALID_INPUT, "Tracking code is null or empty");
@@ -199,7 +207,7 @@ public class PackageService {
         return packageMapper.toResponse(packageEntity);
     }
 
-    public PackageResponse deletePackageById(UUID id, String reason) {
+    public PackageResponse cancelPackage(UUID id, String reason) {
         PackageEntity packageEntity = getPackageById(id);
         assertCanCancel(packageEntity);
 

@@ -86,6 +86,7 @@ input PackageUpdateInput {
 extend type Query {
     findAllPackages(page: Int, size: Int): [PackageResponse!]!
     findPackageById(id: ID!): PackageResponse
+    findPackageHistory(packageId: ID!): [PackageStatusHistoryResponse!]!
     findPackageByTrackingCode(trackingCode: String!): PackageTrackingResponse
     findPackagesByDateRange(page: Int, size: Int, startDate: String, endDate: String): [PackageResponse!]!
     findPackageCountByUserId(userId: ID!): PackageCountResponse
@@ -103,6 +104,6 @@ extend type Mutation {
     rejectPackage(id: ID!, reason: String): PackageResponse!
     reactivatePackage(id: ID!): PackageResponse!
     updatePackage(id: ID!, input: PackageUpdateInput!): PackageResponse!
-    deletePackageById(id: ID!, reason: String): PackageResponse!
+    cancelPackage(id: ID!, reason: String): PackageResponse!
     changePackageStatus(id: ID!, statusCode: String!): PackageResponse!
 }
