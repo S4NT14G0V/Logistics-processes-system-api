@@ -986,6 +986,26 @@
           }
         }
       ]
+    },
+    {
+      "name": "SSE",
+      "item": [
+        {
+          "name": "subscribe /events",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Accept", "value": "text/event-stream", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"]
+            }
+          }
+        }
+      ]
     }
   ]
 }
