@@ -1,4 +1,4 @@
-package com.backend.couriersyncfeat4;
+package com.backend.couriersyncfeat4.integration;
 
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;

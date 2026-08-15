@@ -1,5 +1,14 @@
 package com.backend.couriersyncfeat4.mapper;
 
+import java.util.List;
+
+import org.hibernate.Hibernate;
+import org.mapstruct.BeanMapping;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.Named;
+import org.mapstruct.ReportingPolicy;
+
 import com.backend.couriersyncfeat4.dto.input.PackageInput;
 import com.backend.couriersyncfeat4.dto.output.PackageResponse;
 import com.backend.couriersyncfeat4.dto.output.PackageStatusHistoryResponse;
@@ -9,104 +18,50 @@ import com.backend.couriersyncfeat4.entity.PackageEntity;
 import com.backend.couriersyncfeat4.entity.PackageStatusEntity;
 import com.backend.couriersyncfeat4.entity.PackageStatusHistoryEntity;
 import com.backend.couriersyncfeat4.entity.PlaceEntity;
-import org.hibernate.Hibernate;
-import org.springframework.stereotype.Component;
 
-import java.util.List;
+@Mapper(componentModel = "spring", uses = {PlaceMapper.class}, unmappedTargetPolicy = ReportingPolicy.ERROR)
+public interface PackageMapper {
 
-@Component
-public class PackageMapper {
+    @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
+    @Mapping(target = "uuid", ignore = true)
+    @Mapping(target = "trackingCode", ignore = true)
+    @Mapping(target = "origin", source = "origin")
+    @Mapping(target = "destination", source = "destination")
+    PackageEntity toEntity(PackageInput input, PlaceEntity origin, PlaceEntity destination);
 
-    private final PlaceMapper placeMapper;
+    @Mapping(target = "history", source = "statusHistory", qualifiedByName = "fullHistory")
+    PackageResponse toResponse(PackageEntity entity);
 
-    public PackageMapper(PlaceMapper placeMapper) {
-        this.placeMapper = placeMapper;
+    @Mapping(target = "history", source = "statusHistory", qualifiedByName = "publicHistory")
+    PackageTrackingResponse toTrackingResponse(PackageEntity entity);
+
+    PackageStatusResponse toStatusResponse(PackageStatusEntity status);
+
+    @Named("full")
+    @Mapping(target = "changedBy", expression = "java(h.getChangedBy() != null ? h.getChangedBy().getEmail() : null)")
+    PackageStatusHistoryResponse toHistoryResponse(PackageStatusHistoryEntity h);
+
+    @Named("public")
+    @Mapping(target = "changedBy", ignore = true)
+    PackageStatusHistoryResponse toPublicHistoryResponse(PackageStatusHistoryEntity h);
+
+    default List<PackageStatusHistoryResponse> toHistoryResponses(List<PackageStatusHistoryEntity> history) {
+        return mapFullHistory(history);
     }
 
-    public PackageEntity toEntity(PackageInput input, PlaceEntity origin, PlaceEntity destination) {
-        PackageEntity packageEntity = new PackageEntity();
-        packageEntity.setDescription(input.description());
-        packageEntity.setOrigin(origin);
-        packageEntity.setDestination(destination);
-        packageEntity.setWeightKg(input.weightKg());
-        packageEntity.setLengthCm(input.lengthCm());
-        packageEntity.setWidthCm(input.widthCm());
-        packageEntity.setHeightCm(input.heightCm());
-        packageEntity.setDeclaredValue(input.declaredValue());
-        return packageEntity;
-    }
-
-    public PackageResponse toResponse(PackageEntity entity) {
-        return new PackageResponse(
-                entity.getUuid(),
-                entity.getTrackingCode(),
-                entity.getDescription(),
-                entity.getRegisteredAt(),
-                entity.getUpdatedAt(),
-                entity.getCancelledAt(),
-                entity.getCancellationReason(),
-                entity.getWeightKg(),
-                entity.getLengthCm(),
-                entity.getWidthCm(),
-                entity.getHeightCm(),
-                entity.getDistanceKm(),
-                entity.getDeclaredValue(),
-                entity.getPrice(),
-                toStatusResponse(entity.getStatus()),
-                placeMapper.toResponse(entity.getOrigin()),
-                placeMapper.toResponse(entity.getDestination()),
-                toHistoryResponses(entity.getStatusHistory()));
-    }
-
-    public PackageTrackingResponse toTrackingResponse(PackageEntity entity) {
-        return new PackageTrackingResponse(
-                entity.getTrackingCode(),
-                entity.getDescription(),
-                entity.getRegisteredAt(),
-                entity.getUpdatedAt(),
-                entity.getCancelledAt(),
-                toStatusResponse(entity.getStatus()),
-                placeMapper.toResponse(entity.getOrigin()),
-                placeMapper.toResponse(entity.getDestination()),
-                toPublicHistoryResponses(entity.getStatusHistory()));
-    }
-
-    public List<PackageStatusHistoryResponse> toHistoryResponses(List<PackageStatusHistoryEntity> history) {
+    @Named("fullHistory")
+    default List<PackageStatusHistoryResponse> mapFullHistory(List<PackageStatusHistoryEntity> history) {
         if (history == null || !Hibernate.isInitialized(history)) {
             return List.of();
         }
-        return history.stream()
-                .map(this::toHistoryResponse)
-                .toList();
+        return history.stream().map(this::toHistoryResponse).toList();
     }
 
-    private List<PackageStatusHistoryResponse> toPublicHistoryResponses(List<PackageStatusHistoryEntity> history) {
+    @Named("publicHistory")
+    default List<PackageStatusHistoryResponse> mapPublicHistory(List<PackageStatusHistoryEntity> history) {
         if (history == null || !Hibernate.isInitialized(history)) {
             return List.of();
         }
-        return history.stream()
-                .map(h -> new PackageStatusHistoryResponse(
-                        h.getChangedAt(),
-                        toStatusResponse(h.getFromStatus()),
-                        toStatusResponse(h.getToStatus()),
-                        null,
-                        h.getDescription()))
-                .toList();
-    }
-
-    private PackageStatusHistoryResponse toHistoryResponse(PackageStatusHistoryEntity history) {
-        return new PackageStatusHistoryResponse(
-                history.getChangedAt(),
-                toStatusResponse(history.getFromStatus()),
-                toStatusResponse(history.getToStatus()),
-                history.getChangedBy() != null ? history.getChangedBy().getEmail() : null,
-                history.getDescription());
-    }
-
-    private PackageStatusResponse toStatusResponse(PackageStatusEntity status) {
-        if (status == null) {
-            return null;
-        }
-        return new PackageStatusResponse(status.getId(), status.getCode(), status.getName(), status.getDescription());
+        return history.stream().map(this::toPublicHistoryResponse).toList();
     }
 }

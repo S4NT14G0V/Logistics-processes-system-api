@@ -1,4 +1,4 @@
-package com.backend.couriersyncfeat4;
+package com.backend.couriersyncfeat4.integration;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;

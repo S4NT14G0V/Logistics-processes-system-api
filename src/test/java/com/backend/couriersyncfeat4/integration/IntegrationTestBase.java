@@ -1,4 +1,4 @@
-package com.backend.couriersyncfeat4;
+package com.backend.couriersyncfeat4.integration;
 
 import com.backend.couriersyncfeat4.repository.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;

@@ -1,4 +1,4 @@
-package com.backend.couriersyncfeat4;
+package com.backend.couriersyncfeat4.integration;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
