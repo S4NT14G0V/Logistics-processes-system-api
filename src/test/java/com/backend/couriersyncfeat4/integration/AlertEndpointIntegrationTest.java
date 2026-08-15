@@ -12,7 +12,7 @@ class AlertEndpointIntegrationTest extends IntegrationTestBase {
         String pkg = createPackageUuid(adminToken);
 
         as(adminToken)
-                .document("mutation($u: ID!, $p: ID!, $t: Int!, $d: String){ sendAlertToUser(userId: $u, packageId: $p, alertTypeId: $t, description: $d) }")
+                .document("mutation($u: ID!, $p: ID!, $t: Int!, $d: String){ sendAlertToUser(userId: $u, packageId: $p, alertTypeId: $t, description: $d){ id } }")
                 .variable("u", custId).variable("p", pkg).variable("t", 1).variable("d", "Paquete demorado")
                 .execute();
 

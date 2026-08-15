@@ -48,7 +48,7 @@ public class SecurityConfig {
                                 "/graphql/**",
                                 "/actuator/**"
                         ).permitAll()
-                        //.anyRequest().authenticated()
+                        .requestMatchers("/events/**").authenticated()
                 );
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

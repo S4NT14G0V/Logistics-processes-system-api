@@ -23,6 +23,7 @@ import com.backend.couriersyncfeat4.mapper.PackageMapper;
 import com.backend.couriersyncfeat4.repository.PackageRepository;
 import com.backend.couriersyncfeat4.repository.PackageStatusHistoryRepository;
 import com.backend.couriersyncfeat4.security.SecurityUtils;
+import com.backend.couriersyncfeat4.sse.SseEmitterService;
 
 import lombok.AllArgsConstructor;
 
@@ -50,6 +51,7 @@ public class PackageService {
     private final PlaceService placeService;
     private final PackageMapper packageMapper;
     private final PricingService pricingService;
+    private final SseEmitterService sseEmitterService;
 
     public PackageResponse createPackage(PackageInput input) {
         PlaceEntity origin = placeService.getByUuid(input.origin());
@@ -72,7 +74,8 @@ public class PackageService {
 
         packageRepository.save(packageEntity);
         recordStatusChange(packageEntity, null, createdStatus, userService.getCurrentUser());
-        return packageMapper.toResponse(packageEntity);
+        return publish(packageEntity.getOwnerUser().getId(), "package.created",
+                packageMapper.toResponse(packageEntity));
     }
 
     public PackageResponse proposePackage(PackageInput input) {
@@ -93,7 +96,8 @@ public class PackageService {
 
         packageRepository.save(packageEntity);
         recordStatusChange(packageEntity, null, proposedStatus, currentUser);
-        return packageMapper.toResponse(packageEntity);
+        return publish(packageEntity.getOwnerUser().getId(), "package.proposed",
+                packageMapper.toResponse(packageEntity));
     }
 
     public PackageResponse approvePackage(UUID id) {
@@ -110,7 +114,8 @@ public class PackageService {
         packageEntity.setStatus(createdStatus);
         packageRepository.save(packageEntity);
         recordStatusChange(packageEntity, fromStatus, createdStatus, userService.getCurrentUser());
-        return packageMapper.toResponse(packageEntity);
+        return publish(packageEntity.getOwnerUser().getId(), "package.approved",
+                packageMapper.toResponse(packageEntity));
     }
 
     public PackageResponse rejectPackage(UUID id, String reason) {
@@ -129,7 +134,8 @@ public class PackageService {
         packageEntity.setCancellationReason(reason);
         packageRepository.save(packageEntity);
         recordStatusChange(packageEntity, fromStatus, cancelledStatus, userService.getCurrentUser());
-        return packageMapper.toResponse(packageEntity);
+        return publish(packageEntity.getOwnerUser().getId(), "package.rejected",
+                packageMapper.toResponse(packageEntity));
     }
 
     public PackageResponse reactivatePackage(UUID id) {
@@ -148,7 +154,8 @@ public class PackageService {
         packageEntity.setCancellationReason(null);
         packageRepository.save(packageEntity);
         recordStatusChange(packageEntity, fromStatus, createdStatus, userService.getCurrentUser());
-        return packageMapper.toResponse(packageEntity);
+        return publish(packageEntity.getOwnerUser().getId(), "package.reactivated",
+                packageMapper.toResponse(packageEntity));
     }
 
     public List<PackageResponse> findAllPackages(Integer page, Integer size) {
@@ -207,7 +214,8 @@ public class PackageService {
             applyPricing(packageEntity);
         }
         packageRepository.save(packageEntity);
-        return packageMapper.toResponse(packageEntity);
+        return publish(packageEntity.getOwnerUser().getId(), "package.updated",
+                packageMapper.toResponse(packageEntity));
     }
 
     public PackageResponse cancelPackage(UUID id, String reason) {
@@ -223,7 +231,8 @@ public class PackageService {
 
         packageRepository.save(packageEntity);
         recordStatusChange(packageEntity, fromStatus, cancelledStatus, userService.getCurrentUser());
-        return packageMapper.toResponse(packageEntity);
+        return publish(packageEntity.getOwnerUser().getId(), "package.cancelled",
+                packageMapper.toResponse(packageEntity));
     }
 
     public PackageResponse changePackageStatus(UUID id, String statusCode) {
@@ -249,7 +258,8 @@ public class PackageService {
         packageEntity.setStatus(targetStatus);
         packageRepository.save(packageEntity);
         recordStatusChange(packageEntity, fromStatus, targetStatus, userService.getCurrentUser());
-        return packageMapper.toResponse(packageEntity);
+        return publish(packageEntity.getOwnerUser().getId(), "package.status-changed",
+                packageMapper.toResponse(packageEntity));
     }
 
     public List<PackageResponse> findPackagesByDateRange(Integer page, Integer size,
@@ -326,6 +336,11 @@ public class PackageService {
             entities = packageRepository.findAllByOrigin_UuidAndDestination_Uuid(origin, destination, pageable).getContent();
         }
         return filterOwned(entities).stream().map(packageMapper::toResponse).toList();
+    }
+
+    private PackageResponse publish(UUID ownerId, String eventName, PackageResponse response) {
+        sseEmitterService.send(ownerId, eventName, response);
+        return response;
     }
 
     private void applyPricing(PackageEntity packageEntity) {

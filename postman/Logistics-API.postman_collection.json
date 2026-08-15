@@ -975,7 +975,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"query\":\"mutation($userId: ID!, $packageId: ID!, $alertTypeId: Int!, $description: String){ sendAlertToUser(userId: $userId, packageId: $packageId, alertTypeId: $alertTypeId, description: $description) }\",\"variables\":{\"userId\":\"{{userId}}\",\"packageId\":\"{{packageUuid}}\",\"alertTypeId\":1,\"description\":\"Paquete demorado\"}}",
+              "raw": "{\"query\":\"mutation($userId: ID!, $packageId: ID!, $alertTypeId: Int!, $description: String){ sendAlertToUser(userId: $userId, packageId: $packageId, alertTypeId: $alertTypeId, description: $description){ id } }\",\"variables\":{\"userId\":\"{{userId}}\",\"packageId\":\"{{packageUuid}}\",\"alertTypeId\":1,\"description\":\"Paquete demorado\"}}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {

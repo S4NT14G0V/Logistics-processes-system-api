@@ -11,6 +11,7 @@ import com.backend.couriersyncfeat4.exceptions.ErrorCodes;
 import com.backend.couriersyncfeat4.mapper.AlertMapper;
 import com.backend.couriersyncfeat4.repository.AlertRepository;
 import com.backend.couriersyncfeat4.security.SecurityUtils;
+import com.backend.couriersyncfeat4.sse.SseEmitterService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -25,17 +26,20 @@ public class AlertService {
     private final UserService userService;
     private final PackageService packageService;
     private final AlertMapper alertMapper;
+    private final SseEmitterService sseEmitterService;
 
     public AlertService(AlertTypeService alertTypeService, AlertRepository alertRepository,
-                        UserService userService, PackageService packageService, AlertMapper alertMapper) {
+                        UserService userService, PackageService packageService,
+                        AlertMapper alertMapper, SseEmitterService sseEmitterService) {
         this.alertTypeService = alertTypeService;
         this.alertRepository = alertRepository;
         this.userService = userService;
         this.packageService = packageService;
         this.alertMapper = alertMapper;
+        this.sseEmitterService = sseEmitterService;
     }
 
-    public AlertEntity createAlert(UUID userId, UUID packageId, int alertTypeId, String description) {
+    public AlertResponse createAlert(UUID userId, UUID packageId, int alertTypeId, String description) {
         UserEntity userEntity = userService.getById(userId);
         PackageEntity packageEntity = packageService.getPackageById(packageId);
         AlertTypeEntity alertTypeEntity = alertTypeService.findById(alertTypeId);
@@ -46,7 +50,10 @@ public class AlertService {
         alertEntity.setAlertTypeEntity(alertTypeEntity);
         alertEntity.setDescription(description);
         alertEntity.setRegisteredAt(LocalDateTime.now());
-        return alertRepository.save(alertEntity);
+
+        AlertResponse response = alertMapper.toResponse(alertRepository.save(alertEntity));
+        sseEmitterService.send(userId, "alert.created", response);
+        return response;
     }
 
     public List<AlertResponse> findAll() {

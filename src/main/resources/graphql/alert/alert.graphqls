@@ -18,5 +18,5 @@ extend type Query {
 }
 
 extend type Mutation {
-    sendAlertToUser(userId: ID!, packageId: ID!, alertTypeId: Int!, description: String): Boolean!
+    sendAlertToUser(userId: ID!, packageId: ID!, alertTypeId: Int!, description: String): AlertResponse!
 }

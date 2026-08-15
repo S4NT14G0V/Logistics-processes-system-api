@@ -31,6 +31,18 @@ Authorization: Bearer <accessToken>
 
 ---
 
+## 2. Notificaciones en tiempo real (SSE)
+
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| `GET` | `/events` | `Authorization: Bearer <accessToken>` | Stream `text/event-stream` con los eventos del usuario |
+
+Eventos: `package.created/proposed/approved/rejected/reactivated/updated/cancelled/status-changed` (al `ownerUser`) y `alert.created` (al destinatario).
+
+Ver [`docs/SSE.md`](SSE.md) para el contrato y ejemplos de cliente.
+
+---
+
 ## 2. Permisos (resumen)
 
 | Ámbito | Permisos |
