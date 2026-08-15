@@ -17,10 +17,22 @@ public enum Permission {
     PACKAGE_CANCEL_ALL("package:cancel:all"),
     PACKAGE_CANCEL_OWN("package:cancel:own"),
 
-    USER_CREATE("user:create"),
-    USER_READ("user:read"),
-    USER_UPDATE("user:update"),
-    USER_DELETE("user:delete");
+    USER_CREATE("user:create:all"),
+    USER_READ("user:read:all"),
+    USER_READ_OWN("user:read:own"),
+    USER_UPDATE("user:update:all"),
+    USER_UPDATE_OWN("user:update:own"),
+    USER_DELETE("user:delete:all"),
+
+    CATALOG_READ("catalog:read"),
+
+    LOCATION_READ_ALL("location:read:all"),
+    LOCATION_READ_OWN("location:read:own"),
+    LOCATION_CREATE_ALL("location:create:all"),
+    LOCATION_UPDATE_ALL("location:update:all"),
+    LOCATION_DELETE_ALL("location:delete:all"),
+
+    INVENTORY_READ("inventory:read");
 
     private final String code;
 
