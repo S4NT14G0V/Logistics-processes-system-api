@@ -1,6 +1,7 @@
 package com.backend.couriersyncfeat4.controller;
 
 import com.backend.couriersyncfeat4.dto.input.UserInput;
+import com.backend.couriersyncfeat4.dto.input.UserUpdateInput;
 import com.backend.couriersyncfeat4.dto.output.UserResponse;
 import com.backend.couriersyncfeat4.service.UserService;
 import jakarta.validation.Valid;
@@ -44,6 +45,18 @@ public class UserController {
     @MutationMapping
     public UserResponse createUser(@Argument("input") @Valid UserInput input) {
         return userService.createUser(input);
+    }
+
+    @PreAuthorize("hasAuthority('user:update:all')")
+    @MutationMapping
+    public UserResponse updateUser(@Argument UUID id, @Argument("input") @Valid UserUpdateInput input) {
+        return userService.updateUser(id, input);
+    }
+
+    @PreAuthorize("hasAuthority('user:update:own')")
+    @MutationMapping
+    public UserResponse updateCurrentUser(@Argument("input") @Valid UserUpdateInput input) {
+        return userService.updateCurrentUser(input);
     }
 
     @PreAuthorize("hasAuthority('user:delete:all')")

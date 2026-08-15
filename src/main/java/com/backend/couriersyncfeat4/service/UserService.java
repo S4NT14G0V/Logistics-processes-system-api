@@ -1,6 +1,7 @@
 package com.backend.couriersyncfeat4.service;
 
 import com.backend.couriersyncfeat4.dto.input.UserInput;
+import com.backend.couriersyncfeat4.dto.input.UserUpdateInput;
 import com.backend.couriersyncfeat4.dto.output.UserResponse;
 import com.backend.couriersyncfeat4.entity.RoleEntity;
 import com.backend.couriersyncfeat4.entity.UserEntity;
@@ -65,6 +66,33 @@ public class UserService {
         user.setChangePassword(true);
         user.setCreatedAt(LocalDateTime.now());
         return userMapper.toResponse(userRepository.save(user));
+    }
+
+    public UserResponse updateUser(UUID id, UserUpdateInput input) {
+        UserEntity user = getById(id);
+        applyUpdate(user, input);
+        if (input.roleId() != null) {
+            user.setRoleEntity(roleService.findById(input.roleId()));
+        }
+        return userMapper.toResponse(userRepository.save(user));
+    }
+
+    public UserResponse updateCurrentUser(UserUpdateInput input) {
+        UserEntity user = getCurrentUser();
+        applyUpdate(user, input);
+        return userMapper.toResponse(userRepository.save(user));
+    }
+
+    private void applyUpdate(UserEntity user, UserUpdateInput input) {
+        if (input.name() != null && !input.name().isBlank()) {
+            user.setName(input.name());
+        }
+        if (input.email() != null && !input.email().isBlank() && !input.email().equals(user.getEmail())) {
+            if (userRepository.existsByEmail(input.email())) {
+                throw new ApplicationException(ErrorCodes.CONFLICT, "Email already registered");
+            }
+            user.setEmail(input.email());
+        }
     }
 
     public boolean deleteUser(UUID id) {

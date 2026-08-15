@@ -1,14 +1,22 @@
-type Alert{
+type AlertResponse {
     id: ID!
-    user: User!
-    packageEntity: Package!
-    alertTypeEntity: AlertType!
-    description: String!
-    registeredAt: String!
+    description: String
+    registeredAt: String
+    alertType: AlertType
+    packageId: ID
 }
 
-type AlertType{
+type AlertType {
     id: ID!
     name: String!
     description: String
+}
+
+extend type Query {
+    findAllAlerts: [AlertResponse!]!
+    findAllAlertsByUserId(userId: ID!): [AlertResponse!]!
+}
+
+extend type Mutation {
+    sendAlertToUser(userId: ID!, packageId: ID!, alertTypeId: Int!, description: String): Boolean!
 }

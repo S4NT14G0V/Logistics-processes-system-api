@@ -51,9 +51,38 @@ class UserEndpointIntegrationTest extends IntegrationTestBase {
     @Test
     @Operation("/graphql{findUserById}")
     void findUserById() {
-        as(adminToken).document("query($id: ID!){ findUserById(id: $id){ id email } }")
+        as(adminToken).document("query($id: ID!){ findUserById(id: $id){ id email role{ id name } } }")
                 .variable("id", adminId).execute()
                 .path("findUserById.email").entity(String.class).isEqualTo(ADMIN_EMAIL);
+
+        as(adminToken).document("query($id: ID!){ findUserById(id: $id){ role{ id name } } }")
+                .variable("id", adminId).execute()
+                .path("findUserById.role.name").entity(String.class).isEqualTo("ADMIN");
+    }
+
+    @Test
+    @Operation("/graphql{updateUser}")
+    void updateUser() {
+        String email = "upd-" + UUID.randomUUID() + "@test.com";
+        String userId = as(adminToken)
+                .document("mutation($i: UserInput!){ createUser(input: $i){ id } }")
+                .variable("i", userInput(email)).execute()
+                .path("createUser.id").entity(String.class).get();
+
+        GraphQlTester.Response r = as(adminToken)
+                .document("mutation($id: ID!, $i: UserUpdateInput!){ updateUser(id: $id, input: $i){ id name role{ id } } }")
+                .variable("id", userId).variable("i", Map.of("name", "Renombrado")).execute();
+        r.path("updateUser.name").entity(String.class).isEqualTo("Renombrado");
+        r.path("updateUser.role.id").entity(Integer.class).isEqualTo(5);
+    }
+
+    @Test
+    @Operation("/graphql{updateCurrentUser}")
+    void updateCurrentUser() {
+        GraphQlTester.Response r = as(custToken)
+                .document("mutation($i: UserUpdateInput!){ updateCurrentUser(input: $i){ id name } }")
+                .variable("i", Map.of("name", "Customer Renombrado")).execute();
+        r.path("updateCurrentUser.name").entity(String.class).isEqualTo("Customer Renombrado");
     }
 
     @Test

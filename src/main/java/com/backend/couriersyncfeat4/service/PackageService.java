@@ -180,14 +180,15 @@ public class PackageService {
     }
 
     public PackageTrackingResponse findPackageByTrackingCode(String trackingCode) {
+        return packageMapper.toTrackingResponse(getByTrackingCode(trackingCode));
+    }
+
+    public PackageEntity getByTrackingCode(String trackingCode) {
         if (trackingCode == null || trackingCode.trim().isEmpty()) {
             throw new ApplicationException(ErrorCodes.INVALID_INPUT, "Tracking code is null or empty");
         }
-
-        PackageEntity packageEntity = packageRepository.findByTrackingCode(trackingCode.trim())
+        return packageRepository.findByTrackingCode(trackingCode.trim())
                 .orElseThrow(() -> new ApplicationException(ErrorCodes.PACKAGE_NOT_FOUND, "Package not found"));
-
-        return packageMapper.toTrackingResponse(packageEntity);
     }
 
     public PackageResponse updatePackage(UUID id, PackageUpdateInput input) {

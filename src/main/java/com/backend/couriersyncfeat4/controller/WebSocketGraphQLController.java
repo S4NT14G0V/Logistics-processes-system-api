@@ -1,15 +1,23 @@
 package com.backend.couriersyncfeat4.controller;
 
+import com.backend.couriersyncfeat4.config.Permission;
 import com.backend.couriersyncfeat4.entity.AlertEntity;
+import com.backend.couriersyncfeat4.entity.UserEntity;
+import com.backend.couriersyncfeat4.exceptions.ApplicationException;
+import com.backend.couriersyncfeat4.exceptions.ErrorCodes;
+import com.backend.couriersyncfeat4.security.SecurityUtils;
 import com.backend.couriersyncfeat4.service.AlertService;
+import com.backend.couriersyncfeat4.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.SubscriptionMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Controller
@@ -18,15 +26,18 @@ public class WebSocketGraphQLController {
     private final Map<String, Sinks.Many<String>> userChannels = new ConcurrentHashMap<>();
     private final Map<String, Sinks.Many<AlertEntity>> userAlertChannels = new ConcurrentHashMap<>();
     private final AlertService alertService;
+    private final UserService userService;
 
     @Autowired
-    public WebSocketGraphQLController(AlertService alertService) {
+    public WebSocketGraphQLController(AlertService alertService, UserService userService) {
         this.alertService = alertService;
+        this.userService = userService;
     }
 
+    @PreAuthorize("hasAuthority('package:update:all')")
     @MutationMapping
     public boolean sendMessageToUser(
-            @Argument Long userId,
+            @Argument UUID userId,
             @Argument String message) {
 
         if (userId == null || message == null) {
@@ -41,8 +52,10 @@ public class WebSocketGraphQLController {
         return false;
     }
 
+    @PreAuthorize("hasAnyAuthority('package:read:all','package:read:own')")
     @SubscriptionMapping
-    public Flux<String> subscribeToUserMessages(@Argument Long userId) {
+    public Flux<String> subscribeToUserMessages(@Argument UUID userId) {
+        assertCanSubscribe(userId);
         return userChannels
                 .computeIfAbsent(userId.toString(), id -> {
                     Sinks.Many<String> newSink = Sinks.many().multicast().onBackpressureBuffer();
@@ -58,10 +71,11 @@ public class WebSocketGraphQLController {
                 .asFlux();
     }
 
+    @PreAuthorize("hasAuthority('alert:create:all')")
     @MutationMapping
     public Boolean sendAlertToUser(
-            @Argument Long userId,
-            @Argument Long packageId,
+            @Argument UUID userId,
+            @Argument UUID packageId,
             @Argument int alertTypeId,
             @Argument String description) {
 
@@ -79,8 +93,10 @@ public class WebSocketGraphQLController {
         }
     }
 
+    @PreAuthorize("hasAnyAuthority('package:read:all','package:read:own')")
     @SubscriptionMapping
-    public Flux<AlertEntity> subscribeToUserAlerts(@Argument Long userId) {
+    public Flux<AlertEntity> subscribeToUserAlerts(@Argument UUID userId) {
+        assertCanSubscribe(userId);
         return userAlertChannels
                 .computeIfAbsent(userId.toString(), id -> {
                     Sinks.Many<AlertEntity> newSink = Sinks.many().multicast().onBackpressureBuffer();
@@ -94,5 +110,15 @@ public class WebSocketGraphQLController {
                     return newSink;
                 })
                 .asFlux();
+    }
+
+    private void assertCanSubscribe(UUID userId) {
+        if (SecurityUtils.hasPermission(Permission.PACKAGE_READ_ALL)) {
+            return;
+        }
+        UserEntity currentUser = userService.getCurrentUser();
+        if (currentUser == null || !currentUser.getId().equals(userId)) {
+            throw new ApplicationException(ErrorCodes.FORBIDDEN);
+        }
     }
 }

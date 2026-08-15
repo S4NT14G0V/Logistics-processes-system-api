@@ -1,26 +1,27 @@
 type Location {
     id: ID!
-    handlerUser: User!
-    packageEntity: Package!
-    latitude: Float
-    longitude: Float
-    updatedAt: String!
-    address: String!
-}
-
-input InputLocationAdd {
-    handlerUser: UserInputAux!
-    packageEntity: PackageInput!
-    latitude: Float
-    longitude: Float
-    address: String!
-}
-
-input InputLocationUpdate {
-    id: ID!
-    handlerUser: UserInputAux
-    packageEntity: PackageInput
     latitude: Float
     longitude: Float
     address: String
+}
+
+input LocationAddInput {
+    latitude: Float
+    longitude: Float
+    address: String!
+}
+
+extend type Query {
+    findAllLocations: [Location!]!
+    findLocationById(id: ID!): Location
+    findAllLocationsByPackageId(packageId: ID!): [Location!]!
+    findLocationsByTrackingCode(trackingCode: String!): [Location!]!
+    findLastLocationByPackageId(packageId: ID!): Location
+    findAllLocationsByUserId(userId: ID!): [Location!]!
+}
+
+extend type Mutation {
+    addLocation(packageId: ID!, input: LocationAddInput!): Location!
+    updateLocation(id: ID!, input: LocationAddInput!): Location!
+    deleteLocation(id: ID!): Boolean!
 }

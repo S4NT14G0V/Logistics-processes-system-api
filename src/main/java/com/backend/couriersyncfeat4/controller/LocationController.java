@@ -1,9 +1,9 @@
 package com.backend.couriersyncfeat4.controller;
 
-import com.backend.couriersyncfeat4.entity.CustomResponseEntity;
-import com.backend.couriersyncfeat4.entity.LocationEntity;
+import com.backend.couriersyncfeat4.dto.input.LocationAddInput;
+import com.backend.couriersyncfeat4.dto.output.LocationResponse;
 import com.backend.couriersyncfeat4.service.LocationService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -11,62 +11,68 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import java.util.List;
+import java.util.UUID;
 
 @Controller
 public class LocationController {
 
     private final LocationService locationService;
 
-    @Autowired
     public LocationController(LocationService locationService) {
         this.locationService = locationService;
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'WAREHOUSE', 'SUPERVISOR')")
+    @PreAuthorize("hasAuthority('location:create:all')")
     @MutationMapping
-    public LocationEntity addLocation(@Argument LocationEntity location){
-        return locationService.addLocation(location);
+    public LocationResponse addLocation(@Argument UUID packageId, @Argument("input") @Valid LocationAddInput input) {
+        return locationService.addLocation(packageId, input);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'WAREHOUSE', 'SUPERVISOR')")
+    @PreAuthorize("hasAuthority('location:read:all')")
     @QueryMapping
-    public List<LocationEntity> findAllLocations() {
+    public List<LocationResponse> findAllLocations() {
         return locationService.findAllLocations();
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'WAREHOUSE', 'SUPERVISOR')")
+    @PreAuthorize("hasAuthority('location:read:all')")
     @QueryMapping
-    public LocationEntity findLocationById(@Argument Long id) {
+    public LocationResponse findLocationById(@Argument Long id) {
         return locationService.findLocationById(id);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'WAREHOUSE', 'SUPERVISOR')")
-    @MutationMapping
-    public CustomResponseEntity updateLocation(@Argument LocationEntity location){
-        return locationService.updateLocation(location);
-    }
-
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'WAREHOUSE', 'SUPERVISOR')")
-    @MutationMapping
-    public CustomResponseEntity deleteLocationById(@Argument Long id){
-        return locationService.deleteLocationById(id);
-    }
-
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'WAREHOUSE', 'SUPERVISOR')")
+    @PreAuthorize("hasAnyAuthority('location:read:all','location:read:own')")
     @QueryMapping
-    public List<LocationEntity> findAllLocationsByPackageId(@Argument Long packageId){
-        return locationService.findAllLocationsByPackageEntityId(packageId);
+    public List<LocationResponse> findAllLocationsByPackageId(@Argument UUID packageId) {
+        return locationService.findAllLocationsByPackageId(packageId);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'WAREHOUSE', 'SUPERVISOR')")
+    @PreAuthorize("hasAnyAuthority('location:read:all','location:read:own')")
     @QueryMapping
-    public LocationEntity findLastLocationByPackageId(@Argument Long packageId){
-        return locationService.findLastLocationByPackageEntityId(packageId);
+    public List<LocationResponse> findLocationsByTrackingCode(@Argument String trackingCode) {
+        return locationService.findLocationsByTrackingCode(trackingCode);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'WAREHOUSE', 'SUPERVISOR')")
+    @PreAuthorize("hasAnyAuthority('location:read:all','location:read:own')")
     @QueryMapping
-    public List<LocationEntity> findAllLocationsByUserId(@Argument Long userId){
+    public LocationResponse findLastLocationByPackageId(@Argument UUID packageId) {
+        return locationService.findLastLocationByPackageId(packageId);
+    }
+
+    @PreAuthorize("hasAnyAuthority('location:read:all','location:read:own')")
+    @QueryMapping
+    public List<LocationResponse> findAllLocationsByUserId(@Argument UUID userId) {
         return locationService.findAllLocationsByUserId(userId);
+    }
+
+    @PreAuthorize("hasAuthority('location:update:all')")
+    @MutationMapping
+    public LocationResponse updateLocation(@Argument Long id, @Argument("input") @Valid LocationAddInput input) {
+        return locationService.updateLocation(id, input);
+    }
+
+    @PreAuthorize("hasAuthority('location:delete:all')")
+    @MutationMapping
+    public boolean deleteLocation(@Argument Long id) {
+        return locationService.deleteLocation(id);
     }
 }

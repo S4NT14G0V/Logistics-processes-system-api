@@ -32,6 +32,10 @@ public enum Permission {
     LOCATION_UPDATE_ALL("location:update:all"),
     LOCATION_DELETE_ALL("location:delete:all"),
 
+    ALERT_READ_ALL("alert:read:all"),
+    ALERT_READ_OWN("alert:read:own"),
+    ALERT_CREATE_ALL("alert:create:all"),
+
     INVENTORY_READ("inventory:read");
 
     private final String code;

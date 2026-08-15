@@ -1,0 +1,8 @@
+extend type Query {
+    findAllRoles: [Role!]!
+    findRoleById(id: Int!): Role
+    findAllPackagesStatus: [PackageStatusResponse!]!
+    findPackageStatusById(id: Int!): PackageStatusResponse
+    findAllAlertTypes: [AlertType!]!
+    findAlertTypeById(id: Int!): AlertType
+}
