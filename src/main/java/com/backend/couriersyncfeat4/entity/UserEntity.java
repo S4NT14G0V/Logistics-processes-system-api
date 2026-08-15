@@ -32,6 +32,9 @@ public class UserEntity {
     @Column(nullable = false)
     private boolean enabled = true;
 
+    @Column(name = "change_password", nullable = false)
+    private boolean changePassword = false;
+
     @ManyToOne
     @JoinColumn(name = "role_id", nullable = false)
     private RoleEntity roleEntity;

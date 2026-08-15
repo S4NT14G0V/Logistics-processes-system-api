@@ -1,5 +1,6 @@
 package com.backend.couriersyncfeat4.service;
 
+import com.backend.couriersyncfeat4.dto.input.ChangePasswordRequest;
 import com.backend.couriersyncfeat4.dto.input.LoginRequest;
 import com.backend.couriersyncfeat4.dto.input.LogoutRequest;
 import com.backend.couriersyncfeat4.dto.input.RefreshRequest;
@@ -72,6 +73,15 @@ public class AuthService {
         refreshTokenService.revoke(request.refreshToken());
     }
 
+    public void changePassword(ChangePasswordRequest request) {
+        UserEntity user = userService.getCurrentUser();
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+            throw new ApplicationException(
+                    ErrorCodes.UNAUTHORIZED, "Current password is incorrect");
+        }
+        userService.changePassword(user, passwordEncoder.encode(request.newPassword()));
+    }
+
     private AuthResponse issueTokens(UserEntity user) {
         RoleEntity role = user.getRoleEntity();
 
@@ -83,6 +93,6 @@ public class AuthService {
                 user.getEmail(), role.getName().toUpperCase(), permissions);
         String refreshToken = refreshTokenService.create(user);
 
-        return new AuthResponse(accessToken, refreshToken);
+        return new AuthResponse(accessToken, refreshToken, user.isChangePassword());
     }
 }

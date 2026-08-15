@@ -21,6 +21,12 @@ public class PackageStatusService {
         return packageStatusRepository.findAll();
     }
 
+    public PackageStatusEntity findById(int id) {
+        return packageStatusRepository.findById(id)
+                .orElseThrow(() -> new ApplicationException(ErrorCodes.PACKAGE_STATUS_NOT_FOUND,
+                        "Package status not found: " + id));
+    }
+
     public PackageStatusEntity findByCode(String code) {
         return packageStatusRepository.findByCode(code)
                 .orElseThrow(() -> new ApplicationException(ErrorCodes.PACKAGE_STATUS_NOT_FOUND,

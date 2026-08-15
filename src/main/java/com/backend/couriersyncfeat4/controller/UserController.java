@@ -1,71 +1,54 @@
 package com.backend.couriersyncfeat4.controller;
 
-import com.backend.couriersyncfeat4.entity.CustomResponseEntity;
-import com.backend.couriersyncfeat4.entity.UserEntity;
+import com.backend.couriersyncfeat4.dto.input.UserInput;
+import com.backend.couriersyncfeat4.dto.output.UserResponse;
 import com.backend.couriersyncfeat4.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Controller
 public class UserController {
 
     private final UserService userService;
 
-    @Autowired
     public UserController(UserService userService) {
         this.userService = userService;
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('user:read:all')")
     @QueryMapping
-    public List<UserEntity> findAllUsers() {
+    public List<UserResponse> findAllUsers() {
         return userService.findAllUsers();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('user:read:all')")
     @QueryMapping
-    public UserEntity findUserById(@Argument Long id) {
-        return userService.findUserById(id);
+    public UserResponse findUserById(@Argument UUID id) {
+        return userService.findById(id);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
-    @MutationMapping
-    public UserEntity addUser(@Argument UserEntity user) {
-        return userService.addUser(user);
+    @PreAuthorize("hasAuthority('user:read:own')")
+    @QueryMapping
+    public UserResponse getCurrentUserData() {
+        return userService.getCurrentUserData();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('user:create:all')")
     @MutationMapping
-    public CustomResponseEntity deleteUser(@Argument Long id){
+    public UserResponse createUser(@Argument("input") @Valid UserInput input) {
+        return userService.createUser(input);
+    }
+
+    @PreAuthorize("hasAuthority('user:delete:all')")
+    @MutationMapping
+    public boolean deleteUser(@Argument UUID id) {
         return userService.deleteUser(id);
     }
-
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOGISTICS', 'WAREHOUSE', 'SUPERVISOR', 'CUSTOMER')")
-    @QueryMapping
-    public String currentUserRole() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return "No autenticado";
-        }
-
-        String username = authentication.getName();
-
-        String roles = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.joining(","));
-
-        return "User: " + username + ", Roles: " + roles;
-    }
-
 }

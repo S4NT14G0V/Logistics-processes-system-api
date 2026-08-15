@@ -1,5 +1,6 @@
 package com.backend.couriersyncfeat4.controller;
 
+import com.backend.couriersyncfeat4.dto.input.ChangePasswordRequest;
 import com.backend.couriersyncfeat4.dto.input.LoginRequest;
 import com.backend.couriersyncfeat4.dto.input.LogoutRequest;
 import com.backend.couriersyncfeat4.dto.input.RefreshRequest;
@@ -9,6 +10,7 @@ import com.backend.couriersyncfeat4.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,6 +41,13 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@Valid @RequestBody LogoutRequest request) {
         authService.logout(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/change-password")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(request);
         return ResponseEntity.noContent().build();
     }
 }

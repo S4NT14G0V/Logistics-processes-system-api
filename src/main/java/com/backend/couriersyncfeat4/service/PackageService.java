@@ -60,7 +60,7 @@ public class PackageService {
         }
 
         UserEntity owner = input.ownerUserId() != null
-                ? userService.findUserById(input.ownerUserId())
+                ? userService.getById(input.ownerUserId())
                 : userService.getCurrentUser();
 
         PackageStatusEntity createdStatus = packageStatusService.findByCode(PackageStatusEnum.CREATED.getCode());
@@ -269,7 +269,7 @@ public class PackageService {
 
     public PackageCountResponse findPackageCountByUserId(UUID userId) {
         assertOwnerOrPermissionByUserId(userId, Permission.PACKAGE_READ_ALL);
-        userService.findUserById(userId);
+        userService.getById(userId);
         PackageCountProjection projection = packageRepository.findCountByUserId(userId);
         if (projection == null || projection.getPackageCount() == null) {
             return new PackageCountResponse(userId, 0);
@@ -306,7 +306,7 @@ public class PackageService {
 
     public List<PackageResponse> findAllPackagesByUserId(Integer page, Integer size, UUID userId) {
         assertOwnerOrPermissionByUserId(userId, Permission.PACKAGE_READ_ALL);
-        userService.findUserById(userId);
+        userService.getById(userId);
         Pageable pageable = toPageable(page, size);
         return packageRepository.findAllByOwnerUser_Id(userId, pageable).getContent()
                 .stream().map(packageMapper::toResponse).toList();

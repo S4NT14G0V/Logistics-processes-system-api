@@ -20,7 +20,10 @@ public enum ErrorCodes {
     INVALID_STATUS_TRANSITION("INVALID_STATUS_TRANSITION", 409, "Invalid status transition"),
     SAME_VALUE("SAME_VALUE", 409, "The two values are the same, must be different"),
 
-    USER_NOT_FOUND("USER_NOT_FOUND", 404, "User not found");
+    USER_NOT_FOUND("USER_NOT_FOUND", 404, "User not found"),
+    ROLE_NOT_FOUND("ROLE_NOT_FOUND", 404, "Role not found"),
+    ALERT_TYPE_NOT_FOUND("ALERT_TYPE_NOT_FOUND", 404, "Alert type not found"),
+    LOCATION_NOT_FOUND("LOCATION_NOT_FOUND", 404, "Location not found");
 
     private final String code;
     private final int statusCode;

@@ -152,6 +152,10 @@ public abstract class IntegrationTestBase {
         return post("/auth/login", Map.of("email", email, "password", PASSWORD), null);
     }
 
+    protected JsonNode login(String email, String password) {
+        return post("/auth/login", Map.of("email", email, "password", password), null);
+    }
+
     protected JsonNode post(String path, Map<String, Object> body, String token) {
         HttpHeaders h = new HttpHeaders();
         h.setContentType(MediaType.APPLICATION_JSON);
@@ -163,8 +167,15 @@ public abstract class IntegrationTestBase {
     }
 
     protected int postStatus(String path, Map<String, Object> body) {
+        return postStatus(path, body, null);
+    }
+
+    protected int postStatus(String path, Map<String, Object> body, String token) {
         HttpHeaders h = new HttpHeaders();
         h.setContentType(MediaType.APPLICATION_JSON);
+        if (token != null) {
+            h.setBearerAuth(token);
+        }
         ResponseEntity<String> resp = rest.exchange(path, HttpMethod.POST, new HttpEntity<>(body, h), String.class);
         return resp.getStatusCode().value();
     }
