@@ -22,7 +22,7 @@ public class SseEmitterService {
     }
 
     public SseEmitter subscribe(UUID userId) {
-        SseEmitter emitter = new SseEmitter();
+        SseEmitter emitter = new SseEmitter(0L);
         register(userId, emitter);
         return emitter;
     }
