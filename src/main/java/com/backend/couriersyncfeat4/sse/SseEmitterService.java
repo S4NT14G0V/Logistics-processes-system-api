@@ -44,8 +44,8 @@ public class SseEmitterService {
         if (emitter == null) {
             return;
         }
-        String json = toJson(payload);
         try {
+            String json = toJson(payload);
             emitter.send(SseEmitter.event().name(eventName).data(json));
         } catch (IOException | IllegalStateException e) {
             emitter.completeWithError(e);
