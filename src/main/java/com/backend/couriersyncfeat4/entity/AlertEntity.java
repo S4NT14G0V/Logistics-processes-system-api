@@ -35,7 +35,6 @@ public class AlertEntity {
     @Column(nullable = false, updatable = false)
     private LocalDateTime registeredAt;
 
-    // TODO: Revisar la Pre Persistencia
     @PrePersist
     public void prePersist() {
         if (registeredAt == null) {

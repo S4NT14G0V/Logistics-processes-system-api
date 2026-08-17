@@ -1,0 +1,29 @@
+# --- Carpetas de herramientas de desarrollo (IDE) ---
+.idea/
+.vscode/
+*.swp
+*.log
+
+# --- Archivos del sistema operativo ---
+.DS_Store
+Thumbs.db
+
+# --- Carpetas de compilación local ---
+# Esto evita que Docker use archivos compilados en tu máquina que puedan chocar con el contenedor
+target/
+build/
+out/
+
+# --- Gestores de dependencias locales ---
+.gradle/
+
+# --- Control de versiones y secretos ---
+.git/
+.gitignore
+.env
+.env.*
+
+# --- Archivos de documentación y pruebas ---
+docs/
+postman/
+*.md

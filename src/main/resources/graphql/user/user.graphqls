@@ -2,8 +2,7 @@ type User {
     id: ID!
     name: String!
     email: String!
-    createdAt: String!
-    roleEntity: Role!
+    role: Role
 }
 
 type Role {
@@ -15,13 +14,25 @@ type Role {
 input UserInput {
     name: String!
     email: String!
-    roleEntity: RoleInput!
+    roleId: Int!
+    temporaryPassword: String!
 }
 
-input UserInputAux {
-    id: ID!
+input UserUpdateInput {
+    name: String
+    email: String
+    roleId: Int
 }
 
-input RoleInput{
-    id: ID!
+extend type Query {
+    findAllUsers: [User!]!
+    findUserById(id: ID!): User
+    getCurrentUserData: User
+}
+
+extend type Mutation {
+    createUser(input: UserInput!): User!
+    updateUser(id: ID!, input: UserUpdateInput!): User!
+    updateCurrentUser(input: UserUpdateInput!): User!
+    deleteUser(id: ID!): Boolean!
 }

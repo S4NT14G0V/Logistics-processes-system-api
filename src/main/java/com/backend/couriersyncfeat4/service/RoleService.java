@@ -1,7 +1,8 @@
 package com.backend.couriersyncfeat4.service;
 
 import com.backend.couriersyncfeat4.entity.RoleEntity;
-import com.backend.couriersyncfeat4.interfaces.IRoleService;
+import com.backend.couriersyncfeat4.exceptions.ApplicationException;
+import com.backend.couriersyncfeat4.exceptions.ErrorCodes;
 import com.backend.couriersyncfeat4.repository.RoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class RoleService implements IRoleService {
+public class RoleService {
 
     private final RoleRepository roleRepository;
 
@@ -18,11 +19,17 @@ public class RoleService implements IRoleService {
         this.roleRepository = roleRepository;
     }
 
-    public List<RoleEntity> findAll(){
+    public List<RoleEntity> findAll() {
         return roleRepository.findAll();
     }
 
-    public RoleEntity findById(int id){
-        return roleRepository.findById(id).orElseThrow(()->new RuntimeException("Role not found"));
+    public RoleEntity findById(int id) {
+        return roleRepository.findById(id)
+                .orElseThrow(() -> new ApplicationException(ErrorCodes.ROLE_NOT_FOUND, "Role not found: " + id));
+    }
+
+    public RoleEntity findByName(String name) {
+        return roleRepository.findByName(name)
+                .orElseThrow(() -> new ApplicationException(ErrorCodes.ROLE_NOT_FOUND, "Role not found: " + name));
     }
 }

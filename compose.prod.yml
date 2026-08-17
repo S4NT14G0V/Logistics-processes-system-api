@@ -1,0 +1,4 @@
+services:
+  backend-app:
+    image: ghcr.io/s4nt14g0v/logistics-processes-system-api:latest
+    build: !reset null

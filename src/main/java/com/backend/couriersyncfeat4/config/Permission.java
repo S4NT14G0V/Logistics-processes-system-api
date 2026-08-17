@@ -1,0 +1,50 @@
+package com.backend.couriersyncfeat4.config;
+
+/**
+ * Vocabulario canónico de permisos. El mapeo rol -> permiso vive en la base de
+ * datos (tabla {@code role_permission}); aquí solo se centralizan los nombres
+ * para evitar strings sueltos en el código. Deben coincidir con
+ * {@code permission.name}.
+ */
+public enum Permission {
+
+    PACKAGE_CREATE_ALL("package:create:all"),
+    PACKAGE_CREATE_OWN("package:create:own"),
+    PACKAGE_READ_ALL("package:read:all"),
+    PACKAGE_READ_OWN("package:read:own"),
+    PACKAGE_UPDATE_ALL("package:update:all"),
+    PACKAGE_UPDATE_OWN("package:update:own"),
+    PACKAGE_CANCEL_ALL("package:cancel:all"),
+    PACKAGE_CANCEL_OWN("package:cancel:own"),
+
+    USER_CREATE("user:create:all"),
+    USER_READ("user:read:all"),
+    USER_READ_OWN("user:read:own"),
+    USER_UPDATE("user:update:all"),
+    USER_UPDATE_OWN("user:update:own"),
+    USER_DELETE("user:delete:all"),
+
+    CATALOG_READ("catalog:read"),
+
+    LOCATION_READ_ALL("location:read:all"),
+    LOCATION_READ_OWN("location:read:own"),
+    LOCATION_CREATE_ALL("location:create:all"),
+    LOCATION_UPDATE_ALL("location:update:all"),
+    LOCATION_DELETE_ALL("location:delete:all"),
+
+    ALERT_READ_ALL("alert:read:all"),
+    ALERT_READ_OWN("alert:read:own"),
+    ALERT_CREATE_ALL("alert:create:all"),
+
+    INVENTORY_READ("inventory:read");
+
+    private final String code;
+
+    Permission(String code) {
+        this.code = code;
+    }
+
+    public String getCode() {
+        return code;
+    }
+}

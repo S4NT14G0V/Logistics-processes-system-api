@@ -1,19 +1,18 @@
 package com.backend.couriersyncfeat4.service;
 
 import com.backend.couriersyncfeat4.entity.PackageStatusEntity;
-import com.backend.couriersyncfeat4.interfaces.IPackageStatusService;
+import com.backend.couriersyncfeat4.exceptions.ApplicationException;
+import com.backend.couriersyncfeat4.exceptions.ErrorCodes;
 import com.backend.couriersyncfeat4.repository.PackageStatusRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-public class PackageStatusService implements IPackageStatusService {
+public class PackageStatusService {
 
     private final PackageStatusRepository packageStatusRepository;
 
-    @Autowired
     public PackageStatusService(PackageStatusRepository packageStatusRepository) {
         this.packageStatusRepository = packageStatusRepository;
     }
@@ -23,6 +22,18 @@ public class PackageStatusService implements IPackageStatusService {
     }
 
     public PackageStatusEntity findById(int id) {
-        return packageStatusRepository.findById(id).orElseThrow(()->new RuntimeException("Package Status not found"));
+        return packageStatusRepository.findById(id)
+                .orElseThrow(() -> new ApplicationException(ErrorCodes.PACKAGE_STATUS_NOT_FOUND,
+                        "Package status not found: " + id));
+    }
+
+    public PackageStatusEntity findByCode(String code) {
+        return packageStatusRepository.findByCode(code)
+                .orElseThrow(() -> new ApplicationException(ErrorCodes.PACKAGE_STATUS_NOT_FOUND,
+                        "Package status not found: " + code));
+    }
+
+    public List<PackageStatusEntity> findByCodeIn(List<String> codes) {
+        return packageStatusRepository.findByCodeIn(codes);
     }
 }

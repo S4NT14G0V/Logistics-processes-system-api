@@ -1,7 +1,10 @@
-type InventorySummary {
+type InventorySummaryResponse {
     region: String!
     inTransit: Int!
     delivered: Int!
     pending: Int!
 }
 
+extend type Query {
+    inventorySummary(periodStart: String, periodEnd: String, region: String): [InventorySummaryResponse!]!
+}

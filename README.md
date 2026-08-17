@@ -2,93 +2,144 @@
 
 **Sistema Web para Optimización de Procesos Logísticos**
 
- A web-based system that optimizes a company's transportation and distribution processes, increasing operational efficiency, reducing management time, and improving the customer experience through automation, traceability, and real-time data analysis.
+API de una empresa de paquetería (bodega a bodega) que optimiza el transporte y la
+distribución: ciclo de vida de paquetes, rastreo, ubicaciones, catálogo, inventario,
+usuarios y notificaciones en tiempo real.
 
-**Feature 4.**
+**Feature** — *In-Transit Inventory Control*: monitorear paquetes en todas las
+etapas del transporte, minimizando pérdidas y errores.
 
-  In-Transit Inventory Control Monitor packages at all stages of transportation, minimizing losses and errors.
+## Stack
 
-**Constraints**
-* Java 17
-* Docker
-* Docker [Compose]
+- **Java 17** + **Spring Boot 3.4**
+- **GraphQL** (`/graphql`) para queries/mutations + **REST** (`/auth/*`) para autenticación
+- **PostgreSQL** + **Flyway** (migraciones en `db/migration`)
+- **JWT** (access + refresh token) con roles y permisos (`:all`/`:own`)
+- **MapStruct** para mapear entidad ↔ DTO
+- **SSE** para notificaciones en tiempo real
+- **Rate limiting** con Bucket4j (Redis) + límites de complejidad GraphQL
+- **Testcontainers** para tests de integración con Postgres real
 
----
+## Configuración
 
-## Configuración del archivo `.env`
-Before running the project, create a `.env` file in the root with the following environment variables. Here's an example:
+Crea un archivo `.env` en la raíz:
 
 ```env
 SERVER_PORT=8080
 FRONTEND_BASE_URL=http://localhost:3000
 BACKEND_BASE_URL=http://localhost:8080
-DB_NAME=mydatabase
 DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=mydatabase
 DB_USER=myuser
 DB_PASSWORD=mypassword
-DB_PORT=5432
-JWT_SECRET=mysupersecretkey
-JWT_EXPIRATION=3600000
-OAUTH2_IDCLIENT=your-google-client-id.apps.googleusercontent.com
-OAUTH2_SECRETCLIENT=your-google-client-secret
+DB_SSL_MODE=disable
+JWT_SECRET=<clave Base64>
+ACCESS_TOKEN_TTL=900000
+REFRESH_TOKEN_TTL=2592000000
 ADMIN_EMAIL=test@gmail.com
 ```
 
-## Data Base
-### Set up the database in Supabase
-Go to Supabase and create a project, after that click on the button at the top called `Connect`, in this place click on `View parameters` and collect all values necessary to connect the database.
+- `JWT_SECRET` debe ser una clave **Base64**.
+- `ADMIN_EMAIL`: el email que recibe el rol `ADMIN` al registrarse vía `/auth/register`.
 
-__Preview__:
-
-![image](https://github.com/user-attachments/assets/5f18fe9e-3a23-46e8-a5f8-4d3d0e79d551)
-
-
-### Replace the values of the Data Base
-
-Go to the `.env` and replace the  values of
-`DB_URL`, `DB_PORT`, `DB`, `DB_USER` and `DB_PASSWORD`
-with your postgresql database values corresponding.
-
-## Google Cloud API / Oauth2
-Create an account in Google Cloud and in the search bar put auth, after that click on the first option called similar to `Oauth Consent Screen` fill all necessary information. Click in the `Clients` button and after that click on the `Add client` button to create a new client for the project, add the corresponding `Urls` for prepare the integration service correctly. For the last, save the `Client ID` and `Client Secret` values and replace all in `.env`.
-
-__Preview__:
-
-![image](https://github.com/user-attachments/assets/abdce81c-aa3b-4f0b-9f17-f7567c88937b)
-
-![image](https://github.com/user-attachments/assets/c79fe0fa-18c2-4f82-b34a-8fcdc83e2368)
-
-![image](https://github.com/user-attachments/assets/1f9713ed-189f-4811-8b98-214f99e7f81a)
-
-## JWT
-Establish the parameters of the jwt, that includes `Secret` and `Expiration`, the secret necessary need be `Base64` to function correctly and the expiration it is in milliseconds. Also replace this values in `.env`.
-
-## Admin Setup
-Also, for this sprint to validate everything, you need some special role; our feature includes authentication, but it is not based exclusively on that, then
-you need to replace this value in `.env` (Note: This is provisional to show the results of the sprints).
-
----
-
-## How to install it
-
-### 1. Clone the repository:
+## Cómo ejecutar
 
 ```shell
-git clone https://github.com/TeoGR25/Feature4_Backend.git
+mvn spring-boot:run
 ```
 
-### 2. Put the `.env` file with all the values
-Make sure you have the `.env` file configured as explained above.
+- GraphiQL: `http://localhost:8080/graphiql`
+- Endpoint GraphQL: `POST /graphql`
 
-### 3. Execute the project with Docker Compose
-```docker-compose
-docker-compose build
+## Docker Compose
+
+### Desarrollo (build local)
+
+```shell
+docker compose up --build
 ```
-```docker-compose
-docker-compose up
+
+Compila la imagen desde el `Dockerfile` y levanta backend, Postgres, Redis,
+Prometheus y Grafana.
+
+### Usar la imagen publicada por CI (GHCR)
+
+El pipeline de GitHub Actions publica la imagen en
+`ghcr.io/s4nt14g0v/logistics-processes-system-api:latest` (privada por defecto).
+
+Para descargarla:
+
+1. Crea un **Personal Access Token (PAT)** en GitHub con scope `read:packages`
+   (Settings → Developer settings → Personal access tokens).
+2. Autentícate una vez en Docker:
+
+   ```shell
+   echo $PAT | docker login ghcr.io -u S4NT14G0V --password-stdin
+   ```
+
+3. Levanta con el override de producción (no compila, solo baja la imagen):
+
+   ```shell
+   docker compose -f compose.yaml -f compose.prod.yml up -d
+   ```
+
+## Autenticación
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `POST` | `/auth/register` | Registro (ADMIN si el email coincide con `ADMIN_EMAIL`) |
+| `POST` | `/auth/login` | Login → `{ accessToken, refreshToken, changePasswordRequired }` |
+| `POST` | `/auth/refresh` | Renovar tokens con `refreshToken` |
+| `POST` | `/auth/logout` | Revocar `refreshToken` |
+| `POST` | `/auth/change-password` | Cambiar contraseña (requiere JWT) |
+
+Para GraphQL y los endpoints protegidos, envía:
+
 ```
-## How to test it
+Authorization: Bearer <accessToken>
+```
 
-Enter to the url of backend that you put in the `.env` with the extension `/oauth2/authorization/google`, example: `localhost:8080/oauth2/authorization/google`, and in that site you log in with the google account, after you are going to be redirected to the frontend url of you `.env` wit the extension `/auth/callback?token=`, example: `http://localhost:3001/auth/callback?token=eyJhbGci8...`, then with the token of that url you can execute calls to the `/graphql` endpoint correctly.
+> Los permisos viajan en el JWT; si cambias permisos en la BD, vuelve a hacer login.
 
-Test the endpoint in the extension `/graphiql` of your backend url, at this point for testing you need to put `{"Authorization":"Bearer token"}` after replaced the token value. To see more about the data point access press the button in the sidebar called `Documentation`
+## Notificaciones en tiempo real (SSE)
+
+El backend emite eventos al **dueño de cada paquete** (`package.*`) y a los
+destinatarios de alertas (`alert.created`) vía **Server-Sent Events**.
+
+```
+GET /events
+Authorization: Bearer <accessToken>
+```
+
+Ver [`docs/SSE.md`](docs/SSE.md) para el contrato completo y ejemplos de cliente.
+
+> Cada usuario tiene **una única conexión SSE** activa: al reconectar, la anterior
+> se cierra automáticamente.
+
+## Rate limiting y límites de GraphQL
+
+- **Rate limiting** (Bucket4j): `10 req/min` por IP en `/auth/login|register` y
+  `120 req/min` por usuario en el resto, distribuido con Redis. Ver [`docs/RATE_LIMITING.md`](docs/RATE_LIMITING.md).
+- **Límites de complejidad/profundidad** de GraphQL (`MaxQueryDepthInstrumentation`
+  y `MaxQueryComplexityInstrumentation`) para evitar queries abusivas. Ver
+  [`docs/GRAPHQL_LIMITS.md`](docs/GRAPHQL_LIMITS.md).
+
+## Testing automatizado (Testcontainers)
+
+```shell
+mvn test
+```
+
+Los tests de integración levantan `postgres:18`, corren las migraciones Flyway y
+ejercitan el flujo real (`register` → JWT → `@PreAuthorize`) más el round-trip de SSE.
+
+## Documentación
+
+- [`docs/ENDPOINTS.md`](docs/ENDPOINTS.md) — endpoints y permisos por rol.
+- [`docs/SSE.md`](docs/SSE.md) — notificaciones en tiempo real (eventos + cliente).
+- [`docs/RATE_LIMITING.md`](docs/RATE_LIMITING.md) — rate limiting (Bucket4j + Redis).
+- [`docs/GRAPHQL_LIMITS.md`](docs/GRAPHQL_LIMITS.md) — límites de complejidad/profundidad GraphQL.
+- [`docs/TEST.md`](docs/TEST.md) — qué se testea.
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — features futuras.
+- [`postman/Logistics-API.postman_collection.json`](postman/Logistics-API.postman_collection.json) — colección Postman.

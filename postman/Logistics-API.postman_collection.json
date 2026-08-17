@@ -1,0 +1,1011 @@
+{
+  "info": {
+    "name": "CourierSync - Logistics API",
+    "description": "Auth (REST) + Package (GraphQL). Login/Register guardan accessToken/refreshToken en variables de colección automáticamente. Para createPackage/updatePackage llena originPlaceId y destinationPlaceId con UUIDs válidos de la tabla place.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "adminEmail", "value": "test@gmail.com" },
+    { "key": "customerEmail", "value": "customer@example.com" },
+    { "key": "password", "value": "password123" },
+    { "key": "originPlaceId", "value": "" },
+    { "key": "destinationPlaceId", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "packageUuid", "value": "" },
+    { "key": "packageUuidPropose", "value": "" },
+    { "key": "trackingCode", "value": "" },
+    { "key": "placeUuid", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"{{customerEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.accessToken) pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "if (body && body.refreshToken) pm.collectionVariables.set('refreshToken', body.refreshToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{customerEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.accessToken) pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "if (body && body.refreshToken) pm.collectionVariables.set('refreshToken', body.refreshToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.accessToken) pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "if (body && body.refreshToken) pm.collectionVariables.set('refreshToken', body.refreshToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.accessToken) pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "if (body && body.refreshToken) pm.collectionVariables.set('refreshToken', body.refreshToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"{{password}}\",\n  \"newPassword\": \"newPassword123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "change-password"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Package",
+      "item": [
+        {
+          "name": "createPackage",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation($input: PackageInput!){ createPackage(input: $input){ uuid trackingCode description registeredAt status{code name} origin{uuid name} destination{uuid name} } }\",\"variables\":{\"input\":{\"description\":\"Paquete de prueba\",\"origin\":\"{{originPlaceId}}\",\"destination\":\"{{destinationPlaceId}}\"}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "findAllPackages",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query($page: Int, $size: Int){ findAllPackages(page: $page, size: $size){ uuid trackingCode description status{code name} } }\",\"variables\":{\"page\":0,\"size\":20}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "findPackageById",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query($id: ID!){ findPackageById(id: $id){ uuid trackingCode description status{code name} origin{uuid name} destination{uuid name} history{ changedAt fromStatus{code name} toStatus{code name} changedBy } } }\",\"variables\":{\"id\":\"{{packageUuid}}\"}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "findPackageHistory",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query($packageId: ID!){ findPackageHistory(packageId: $packageId){ changedAt fromStatus{code name} toStatus{code name} changedBy } }\",\"variables\":{\"packageId\":\"{{packageUuid}}\"}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "findPackageByTrackingCode",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query($trackingCode: String!){ findPackageByTrackingCode(trackingCode: $trackingCode){ trackingCode description status{code name} origin{uuid name} destination{uuid name} registeredAt updatedAt history{ changedAt fromStatus{code name} toStatus{code name} } } }\",\"variables\":{\"trackingCode\":\"{{trackingCode}}\"}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "findPackagesByDateRange",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query($startDate: String, $endDate: String){ findPackagesByDateRange(startDate: $startDate, endDate: $endDate){ uuid trackingCode description } }\",\"variables\":{\"startDate\":\"2026-01-01T00:00:00\",\"endDate\":\"2026-12-31T23:59:59\"}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "findPackageCountByUserId",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query($userId: ID!){ findPackageCountByUserId(userId: $userId){ userId packageCount } }\",\"variables\":{\"userId\":\"{{userId}}\"}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "findPackagesByStatusIn",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query($packageStatuses: [String!]!){ findPackagesByStatusIn(packageStatuses: $packageStatuses){ uuid trackingCode description status{code name} } }\",\"variables\":{\"packageStatuses\":[\"CREATED\",\"IN_TRANSIT\"]}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "findPackageCountByAllUsers",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query{ findPackageCountByAllUsers{ totalPackages users{ userId packageCount } } }\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "findPackageCountByAllStatus",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query{ findPackageCountByAllStatus{ statusCode count } }\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "findAllPackagesByUserId",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query($userId: ID!){ findAllPackagesByUserId(userId: $userId){ uuid trackingCode description status{code name} } }\",\"variables\":{\"userId\":\"{{userId}}\"}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "findAllPackagesByPlace",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query($origin: ID, $destination: ID){ findAllPackagesByPlace(origin: $origin, destination: $destination){ uuid trackingCode description origin{uuid name} destination{uuid name} } }\",\"variables\":{\"origin\":\"{{originPlaceId}}\",\"destination\":\"{{destinationPlaceId}}\"}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "updatePackage",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation($id: ID!, $input: PackageUpdateInput!){ updatePackage(id: $id, input: $input){ uuid trackingCode description status{code name} } }\",\"variables\":{\"id\":\"{{packageUuid}}\",\"input\":{\"description\":\"Descripción actualizada\",\"origin\":\"{{originPlaceId}}\",\"destination\":\"{{destinationPlaceId}}\"}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "cancelPackage",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation($id: ID!, $reason: String){ cancelPackage(id: $id, reason: $reason){ uuid trackingCode status{code name} cancellationReason } }\",\"variables\":{\"id\":\"{{packageUuid}}\",\"reason\":\"Paquete cancelado por el cliente\"}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "changePackageStatus",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation($id: ID!, $statusCode: String!){ changePackageStatus(id: $id, statusCode: $statusCode){ uuid trackingCode status{code name} } }\",\"variables\":{\"id\":\"{{packageUuid}}\",\"statusCode\":\"IN_TRANSIT\"}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "proposePackage",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation($input: PackageInput!){ proposePackage(input: $input){ uuid trackingCode price distanceKm status{code name} } }\",\"variables\":{\"input\":{\"description\":\"Propuesta de envío\",\"origin\":\"{{originPlaceId}}\",\"destination\":\"{{destinationPlaceId}}\",\"weightKg\":2.5,\"lengthCm\":20,\"widthCm\":15,\"heightCm\":10,\"declaredValue\":50000}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "approvePackage",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation($id: ID!){ approvePackage(id: $id){ uuid trackingCode status{code name} } }\",\"variables\":{\"id\":\"{{packageUuidPropose}}\"}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "rejectPackage",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation($id: ID!, $reason: String){ rejectPackage(id: $id, reason: $reason){ uuid trackingCode status{code name} cancellationReason } }\",\"variables\":{\"id\":\"{{packageUuidPropose}}\",\"reason\":\"Propuesta rechazada\"}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "reactivatePackage",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation($id: ID!){ reactivatePackage(id: $id){ uuid trackingCode status{code name} } }\",\"variables\":{\"id\":\"{{packageUuid}}\"}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Place",
+      "item": [
+        {
+          "name": "findAllPlaces",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query{ findAllPlaces{ uuid name address city department latitude longitude } }\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "createPlace",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation($input: PlaceInput!){ createPlace(input: $input){ uuid name address city department latitude longitude } }\",\"variables\":{\"input\":{\"name\":\"Bodega Central\",\"address\":\"Calle 1 #2-3\",\"city\":\"Bogotá\",\"department\":\"Cundinamarca\",\"latitude\":4.7110,\"longitude\":-74.0721}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "updatePlace",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation($uuid: ID!, $input: PlaceInput!){ updatePlace(uuid: $uuid, input: $input){ uuid name address city department latitude longitude } }\",\"variables\":{\"uuid\":\"{{placeUuid}}\",\"input\":{\"name\":\"Bodega Norte\",\"address\":\"Av 10 #20-30\",\"city\":\"Medellín\",\"department\":\"Antioquia\",\"latitude\":6.2442,\"longitude\":-75.5812}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "deletePlace",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation($uuid: ID!){ deletePlace(uuid: $uuid) }\",\"variables\":{\"uuid\":\"{{placeUuid}}\"}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User",
+      "item": [
+        {
+          "name": "findAllUsers",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query{ findAllUsers{ id name email role{ id name } } }\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "getCurrentUserData",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query{ getCurrentUserData{ id name email role{ id name } } }\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "createUser",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation($input: UserInput!){ createUser(input: $input){ id name email role{ id name } } }\",\"variables\":{\"input\":{\"name\":\"Nuevo Usuario\",\"email\":\"nuevo@example.com\",\"roleId\":5,\"temporaryPassword\":\"TempPass123!\"}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "updateUser",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation($id: ID!, $input: UserUpdateInput!){ updateUser(id: $id, input: $input){ id name email role{ id name } } }\",\"variables\":{\"id\":\"{{userId}}\",\"input\":{\"name\":\"Nombre Actualizado\"}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "updateCurrentUser",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation($input: UserUpdateInput!){ updateCurrentUser(input: $input){ id name email role{ id name } } }\",\"variables\":{\"input\":{\"name\":\"Mi nuevo nombre\"}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "deleteUser",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation($id: ID!){ deleteUser(id: $id) }\",\"variables\":{\"id\":\"{{userId}}\"}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalog",
+      "item": [
+        {
+          "name": "findAllRoles",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query{ findAllRoles{ id name description } }\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "findAllPackagesStatus",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query{ findAllPackagesStatus{ id code name description } }\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "findAllAlertTypes",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query{ findAllAlertTypes{ id name description } }\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Location",
+      "item": [
+        {
+          "name": "addLocation",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation($packageId: ID!, $input: LocationAddInput!){ addLocation(packageId: $packageId, input: $input){ id latitude longitude address } }\",\"variables\":{\"packageId\":\"{{packageUuid}}\",\"input\":{\"latitude\":4.66,\"longitude\":-74.05,\"address\":\"Calle 80 #10-20\"}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "findLocationsByTrackingCode",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query($trackingCode: String!){ findLocationsByTrackingCode(trackingCode: $trackingCode){ id latitude longitude address } }\",\"variables\":{\"trackingCode\":\"{{trackingCode}}\"}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "findAllLocations",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query{ findAllLocations{ id latitude longitude address } }\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inventory",
+      "item": [
+        {
+          "name": "inventorySummary",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query($start: String, $end: String, $region: String){ inventorySummary(periodStart: $start, periodEnd: $end, region: $region){ region inTransit delivered pending } }\",\"variables\":{\"start\":null,\"end\":null,\"region\":null}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Alert",
+      "item": [
+        {
+          "name": "findAllAlerts",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query{ findAllAlerts{ id description registeredAt alertType{ id name } packageId } }\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        },
+        {
+          "name": "sendAlertToUser",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation($userId: ID!, $packageId: ID!, $alertTypeId: Int!, $description: String){ sendAlertToUser(userId: $userId, packageId: $packageId, alertTypeId: $alertTypeId, description: $description){ id } }\",\"variables\":{\"userId\":\"{{userId}}\",\"packageId\":\"{{packageUuid}}\",\"alertTypeId\":1,\"description\":\"Paquete demorado\"}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": ["{{baseUrl}}"],
+              "path": ["graphql"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "SSE",
+      "item": [
+        {
+          "name": "subscribe /events",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+              { "key": "Accept", "value": "text/event-stream", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

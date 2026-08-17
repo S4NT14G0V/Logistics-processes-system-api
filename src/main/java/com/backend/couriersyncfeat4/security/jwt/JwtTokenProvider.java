@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.List;
 import java.util.function.Function;
 
 @Component
@@ -17,8 +18,8 @@ public class JwtTokenProvider {
     @Value("${app.jwt.secret.code}")
     private String jwtSecret;
 
-    @Value("${app.jwt.expiration.time}")
-    private long jwtExpirationInMs;
+    @Value("${app.jwt.access-token-ttl}")
+    private long accessTokenTtlInMs;
 
     private SecretKey secretKey;
 
@@ -27,13 +28,14 @@ public class JwtTokenProvider {
         this.secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
 
-    public String generateToken(String email, String role) {
+    public String generateAccessToken(String email, String role, List<String> permissions) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtExpirationInMs);
+        Date expiryDate = new Date(now.getTime() + accessTokenTtlInMs);
 
         return Jwts.builder()
                 .subject(email)
                 .claim("role", role)
+                .claim("permissions", permissions)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(secretKey, Jwts.SIG.HS256)
@@ -60,6 +62,14 @@ public class JwtTokenProvider {
 
     public String getRoleFromToken(String token) {
         return getClaimFromToken(token, claims -> claims.get("role", String.class));
+    }
+
+    public List<String> getPermissionsFromToken(String token) {
+        Object permissions = getClaimFromToken(token, claims -> claims.get("permissions"));
+        if (permissions instanceof List<?> list) {
+            return list.stream().map(String::valueOf).toList();
+        }
+        return List.of();
     }
 
     public boolean validateToken(String token) {
