@@ -11,6 +11,9 @@ import java.util.List;
 @Service
 public class InventoryService {
 
+    private static final LocalDateTime MIN_DATE = LocalDateTime.of(1900, 1, 1, 0, 0);
+    private static final LocalDateTime MAX_DATE = LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+
     private final InventoryRepository inventoryRepo;
 
     @Autowired
@@ -19,6 +22,8 @@ public class InventoryService {
     }
 
     public List<InventorySummaryResponse> findSummary(LocalDateTime start, LocalDateTime end, String region) {
-        return inventoryRepo.summaryByPeriodAndRegion(start, end, region);
+        LocalDateTime from = start != null ? start : MIN_DATE;
+        LocalDateTime to = end != null ? end : MAX_DATE;
+        return inventoryRepo.summaryByPeriodAndRegion(from, to, region);
     }
 }
