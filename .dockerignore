@@ -15,7 +15,6 @@ build/
 out/
 
 # --- Gestores de dependencias locales ---
-.mvn/
 .gradle/
 
 # --- Control de versiones y secretos ---
