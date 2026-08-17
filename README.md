@@ -17,7 +17,7 @@ etapas del transporte, minimizando pérdidas y errores.
 - **JWT** (access + refresh token) con roles y permisos (`:all`/`:own`)
 - **MapStruct** para mapear entidad ↔ DTO
 - **SSE** para notificaciones en tiempo real
-- **Rate limiting** con Bucket4j (en memoria o Redis) + límites de complejidad GraphQL
+- **Rate limiting** con Bucket4j (Redis) + límites de complejidad GraphQL
 - **Testcontainers** para tests de integración con Postgres real
 
 ## Configuración
@@ -51,6 +51,38 @@ mvn spring-boot:run
 
 - GraphiQL: `http://localhost:8080/graphiql`
 - Endpoint GraphQL: `POST /graphql`
+
+## Docker Compose
+
+### Desarrollo (build local)
+
+```shell
+docker compose up --build
+```
+
+Compila la imagen desde el `Dockerfile` y levanta backend, Postgres, Redis,
+Prometheus y Grafana.
+
+### Usar la imagen publicada por CI (GHCR)
+
+El pipeline de GitHub Actions publica la imagen en
+`ghcr.io/s4nt14g0v/logistics-processes-system-api:latest` (privada por defecto).
+
+Para descargarla:
+
+1. Crea un **Personal Access Token (PAT)** en GitHub con scope `read:packages`
+   (Settings → Developer settings → Personal access tokens).
+2. Autentícate una vez en Docker:
+
+   ```shell
+   echo $PAT | docker login ghcr.io -u S4NT14G0V --password-stdin
+   ```
+
+3. Levanta con el override de producción (no compila, solo baja la imagen):
+
+   ```shell
+   docker compose -f compose.yaml -f compose.prod.yml up -d
+   ```
 
 ## Autenticación
 
