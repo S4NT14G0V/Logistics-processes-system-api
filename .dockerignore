@@ -22,3 +22,9 @@ out/
 .git/
 .gitignore
 .env
+.env.*
+
+# --- Archivos de documentación y pruebas ---
+docs/
+postman/
+*.md
