@@ -17,9 +17,9 @@ public interface InventoryRepository extends JpaRepository<PackageEntity, UUID> 
             "SUM(CASE WHEN p.status.code = 'DELIVERED' THEN 1 ELSE 0 END) AS delivered, " +
             "SUM(CASE WHEN p.status.code = 'CREATED' THEN 1 ELSE 0 END) AS pending " +
             "FROM PackageEntity p " +
-            "WHERE (cast(:start as timestamp) IS NULL OR p.registeredAt >= :start) " +
-            "  AND (cast(:end as timestamp) IS NULL OR p.registeredAt <= :end) " +
-            "  AND (cast(:region as string) IS NULL OR p.destination.name = :region) " +
+            "WHERE (:start IS NULL OR p.registeredAt >= :start) " +
+            "  AND (:end IS NULL OR p.registeredAt <= :end) " +
+            "  AND (:region IS NULL OR p.destination.name = :region) " +
             "GROUP BY p.destination.name")
     List<InventorySummaryResponse> summaryByPeriodAndRegion(
             @Param("start") LocalDateTime start,
