@@ -6,7 +6,7 @@ API de una empresa de paquetería (bodega a bodega) que optimiza el transporte y
 distribución: ciclo de vida de paquetes, rastreo, ubicaciones, catálogo, inventario,
 usuarios y notificaciones en tiempo real.
 
-**Feature 4** — *In-Transit Inventory Control*: monitorear paquetes en todas las
+**Feature** — *In-Transit Inventory Control*: monitorear paquetes en todas las
 etapas del transporte, minimizando pérdidas y errores.
 
 ## Stack
@@ -17,6 +17,7 @@ etapas del transporte, minimizando pérdidas y errores.
 - **JWT** (access + refresh token) con roles y permisos (`:all`/`:own`)
 - **MapStruct** para mapear entidad ↔ DTO
 - **SSE** para notificaciones en tiempo real
+- **Rate limiting** con Bucket4j (en memoria o Redis) + límites de complejidad GraphQL
 - **Testcontainers** para tests de integración con Postgres real
 
 ## Configuración
@@ -81,6 +82,17 @@ Authorization: Bearer <accessToken>
 
 Ver [`docs/SSE.md`](docs/SSE.md) para el contrato completo y ejemplos de cliente.
 
+> Cada usuario tiene **una única conexión SSE** activa: al reconectar, la anterior
+> se cierra automáticamente.
+
+## Rate limiting y límites de GraphQL
+
+- **Rate limiting** (Bucket4j): `10 req/min` por IP en `/auth/login|register` y
+  `120 req/min` por usuario en el resto, distribuido con Redis. Ver [`docs/RATE_LIMITING.md`](docs/RATE_LIMITING.md).
+- **Límites de complejidad/profundidad** de GraphQL (`MaxQueryDepthInstrumentation`
+  y `MaxQueryComplexityInstrumentation`) para evitar queries abusivas. Ver
+  [`docs/GRAPHQL_LIMITS.md`](docs/GRAPHQL_LIMITS.md).
+
 ## Testing automatizado (Testcontainers)
 
 ```shell
@@ -94,6 +106,8 @@ ejercitan el flujo real (`register` → JWT → `@PreAuthorize`) más el round-t
 
 - [`docs/ENDPOINTS.md`](docs/ENDPOINTS.md) — endpoints y permisos por rol.
 - [`docs/SSE.md`](docs/SSE.md) — notificaciones en tiempo real (eventos + cliente).
+- [`docs/RATE_LIMITING.md`](docs/RATE_LIMITING.md) — rate limiting (Bucket4j + Redis).
+- [`docs/GRAPHQL_LIMITS.md`](docs/GRAPHQL_LIMITS.md) — límites de complejidad/profundidad GraphQL.
 - [`docs/TEST.md`](docs/TEST.md) — qué se testea.
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — features futuras.
 - [`postman/Logistics-API.postman_collection.json`](postman/Logistics-API.postman_collection.json) — colección Postman.

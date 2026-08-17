@@ -1,6 +1,7 @@
 package com.backend.couriersyncfeat4.integration;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.http.ResponseEntity;
 
 import java.net.URI;
@@ -8,12 +9,15 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ExtendWith(OperationLoggerExtension.class)
 class SseEndpointIntegrationTest extends IntegrationTestBase {
 
     private static final HttpClient HTTP = HttpClient.newHttpClient();
@@ -70,19 +74,33 @@ class SseEndpointIntegrationTest extends IntegrationTestBase {
 
         AtomicReference<String> event = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<Stream<String>> bodyRef = new AtomicReference<>();
 
-        HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofLines())
-                .thenAccept(resp -> resp.body().forEach(line -> {
-                    if (line.contains(expectedEvent)) {
-                        event.set(line);
-                        latch.countDown();
-                    }
-                }));
+        CompletableFuture<HttpResponse<Stream<String>>> future =
+                HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofLines());
+        future.thenAccept(resp -> {
+            Stream<String> lines = resp.body();
+            bodyRef.set(lines);
+            lines.forEach(line -> {
+                if (line.contains(expectedEvent)) {
+                    event.set(line);
+                    latch.countDown();
+                }
+            });
+        });
 
-        Thread.sleep(1000);
-        trigger.run();
+        try {
+            Thread.sleep(1000);
+            trigger.run();
 
-        assertThat(latch.await(15, TimeUnit.SECONDS)).isTrue();
-        return event.get();
+            assertThat(latch.await(15, TimeUnit.SECONDS)).isTrue();
+            return event.get();
+        } finally {
+            Stream<String> lines = bodyRef.get();
+            if (lines != null) {
+                lines.close();
+            }
+            future.cancel(true);
+        }
     }
 }

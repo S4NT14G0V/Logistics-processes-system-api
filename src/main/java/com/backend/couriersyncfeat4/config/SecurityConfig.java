@@ -1,5 +1,8 @@
 package com.backend.couriersyncfeat4.config;
 
+import com.backend.couriersyncfeat4.config.ratelimit.RateLimitBucketProvider;
+import com.backend.couriersyncfeat4.config.ratelimit.RateLimitFilter;
+import com.backend.couriersyncfeat4.config.ratelimit.RateLimitProperties;
 import com.backend.couriersyncfeat4.security.jwt.JwtAuthenticationEntryPoint;
 import com.backend.couriersyncfeat4.security.jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +33,8 @@ import java.util.List;
 public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint authenticationEntryPoint;
+    private final RateLimitProperties rateLimitProperties;
+    private final RateLimitBucketProvider rateLimitBucketProvider;
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
@@ -42,6 +47,7 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
+                        .shouldFilterAllDispatcherTypes(false)
                         .requestMatchers(
                                 "/auth/**",
                                 "/graphiql/**",
@@ -52,6 +58,8 @@ public class SecurityConfig {
                 );
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterAfter(new RateLimitFilter(rateLimitProperties, rateLimitBucketProvider),
+                JwtAuthenticationFilter.class);
 
         return http.build();
     }

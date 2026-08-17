@@ -58,7 +58,7 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
 
     @GraphQlExceptionHandler
     public GraphQLError handleGraphQlApplicationException(final ApplicationException exception) {
-        log.error("GraphQL error code={}; message: {}", exception.getErrorCode().getCode(),
+        log.debug("GraphQL error code={}; message: {}", exception.getErrorCode().getCode(),
                 exception.getMessage());
         return GraphqlErrorBuilder.newError()
                 .message(exception.getMessage())
@@ -71,7 +71,7 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
 
     @GraphQlExceptionHandler
     public GraphQLError handleAccessDeniedException(final AccessDeniedException exception) {
-        log.error("GraphQL error code={}; message: {}", ErrorCodes.FORBIDDEN.getCode(),
+        log.debug("GraphQL error code={}; message: {}", ErrorCodes.FORBIDDEN.getCode(),
                 ErrorCodes.FORBIDDEN.getMessage());
         return GraphqlErrorBuilder.newError()
                 .message(ErrorCodes.FORBIDDEN.getMessage())
